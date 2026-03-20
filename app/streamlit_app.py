@@ -2092,7 +2092,7 @@ def render_gold_layer_tab():
     with col_b1:
         if st.button("🏗️ Build Core Gold Layer" if not gold_exists else "🔄 Rebuild Core Gold Layer",
                       type="primary" if not gold_exists else "secondary", use_container_width=True,
-                      help="Build 4 core Gold DTs (CUSTOMER_360, PRODUCT_PERFORMANCE, ORDER_SUMMARY, ML_CUSTOMER_FEATURES). Use Agentic Gold to build CUSTOMER_METRICS."):
+                      help="Build 4 core Gold DTs (CUSTOMER_360, PRODUCT_PERFORMANCE_METRICS, ORDER_SUMMARY, ML_CUSTOMER_FEATURES). Use Agentic Gold to build SUPPORT_METRICS."):
             with st.spinner("Building core Gold Dynamic Tables..."):
                 gold_ddls = [
                     ("CUSTOMER_360", """CREATE OR REPLACE DYNAMIC TABLE DBAONTAP_ANALYTICS.GOLD.CUSTOMER_360
@@ -2124,21 +2124,22 @@ def render_gold_layer_tab():
                         WHERE c._SNOWFLAKE_DELETED = FALSE
                         GROUP BY c.CUSTOMER_ID, c.FIRST_NAME, c.LAST_NAME, c.EMAIL, c.PHONE,
                                  c.COMPANY_NAME, c.SEGMENT, c.LOYALTY_TIER, c.ANNUAL_REVENUE, c.CREATED_AT"""),
-                    ("PRODUCT_PERFORMANCE", """CREATE OR REPLACE DYNAMIC TABLE DBAONTAP_ANALYTICS.GOLD.PRODUCT_PERFORMANCE
+                    ("PRODUCT_PERFORMANCE_METRICS", """CREATE OR REPLACE DYNAMIC TABLE DBAONTAP_ANALYTICS.GOLD.PRODUCT_PERFORMANCE_METRICS
                         TARGET_LAG = DOWNSTREAM WAREHOUSE = DBRYANT_COCO_WH_S AS
-                        SELECT p.PRODUCT_ID, p.NAME as PRODUCT_NAME, p.CATEGORY, p.LIST_PRICE, p.COST_PRICE,
-                            p.LIST_PRICE - p.COST_PRICE as MARGIN,
-                            CASE WHEN p.LIST_PRICE > 0 THEN ROUND((p.LIST_PRICE - p.COST_PRICE) / p.LIST_PRICE * 100, 2) ELSE 0 END as MARGIN_PERCENT,
-                            p.SKU, p.IS_ACTIVE,
-                            COUNT(DISTINCT oi.ORDER_ID) as ORDERS_COUNT,
-                            SUM(oi.QUANTITY) as UNITS_SOLD,
+                        SELECT p.CATEGORY,
+                            COUNT(DISTINCT p.PRODUCT_ID) as TOTAL_PRODUCTS,
+                            COUNT(DISTINCT CASE WHEN p.IS_ACTIVE = TRUE THEN p.PRODUCT_ID END) as ACTIVE_PRODUCTS,
+                            AVG(p.LIST_PRICE) as AVG_LIST_PRICE,
+                            AVG(p.COST_PRICE) as AVG_COST_PRICE,
+                            AVG(p.LIST_PRICE - p.COST_PRICE) as AVG_MARGIN,
+                            SUM(oi.QUANTITY) as TOTAL_UNITS_SOLD,
                             SUM(oi.LINE_TOTAL) as TOTAL_REVENUE,
-                            COUNT(DISTINCT o.CUSTOMER_ID) as UNIQUE_CUSTOMERS
-                        FROM DBAONTAP_ANALYTICS.SILVER.PRODUCTS p
+                            SUM(oi.LINE_TOTAL)/NULLIF(SUM(oi.QUANTITY), 0) as AVG_SELLING_PRICE,
+                            COUNT(DISTINCT oi.ORDER_ID) as ORDERS_WITH_CATEGORY
+                        FROM DBAONTAP_ANALYTICS.SILVER.PRODUCTS_VARIANT p
                         LEFT JOIN DBAONTAP_ANALYTICS.SILVER.ORDER_ITEMS oi ON p.PRODUCT_ID = oi.PRODUCT_ID
-                        LEFT JOIN DBAONTAP_ANALYTICS.SILVER.ORDERS o ON oi.ORDER_ID = o.ORDER_ID
                         WHERE p._SNOWFLAKE_DELETED = FALSE
-                        GROUP BY p.PRODUCT_ID, p.NAME, p.CATEGORY, p.LIST_PRICE, p.COST_PRICE, p.SKU, p.IS_ACTIVE"""),
+                        GROUP BY p.CATEGORY"""),
                     ("ORDER_SUMMARY", """CREATE OR REPLACE DYNAMIC TABLE DBAONTAP_ANALYTICS.GOLD.ORDER_SUMMARY
                         TARGET_LAG = DOWNSTREAM WAREHOUSE = DBRYANT_COCO_WH_S AS
                         SELECT DATE_TRUNC('month', o.ORDER_DATE)::DATE as ORDER_MONTH,
