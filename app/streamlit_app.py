@@ -2175,6 +2175,13 @@ def render_gold_layer_tab():
                 results = []
                 for i, (name, ddl) in enumerate(gold_ddls):
                     try:
+                        validation = run_query(f"CALL DBAONTAP_ANALYTICS.AGENTS.VALIDATE_GOLD_DDL($${ddl}$$)")
+                        import json as _json_v
+                        v_result = _json_v.loads(validation.iloc[0, 0]) if validation is not None and len(validation) > 0 else {"valid": True}
+                        if not v_result.get("valid", True):
+                            results.append((name, False, f"Validation failed: {v_result.get('message', 'Unknown')}"))
+                            progress.progress((i + 1) / len(gold_ddls))
+                            continue
                         run_query(ddl, fetch=False)
                         results.append((name, True, None))
                     except Exception as e:
