@@ -1356,16 +1356,19 @@ def render_pipeline_tab():
     
     dt_status = run_query("""
         SELECT 
-            name as "Name",
-            state_code as "State",
-            state_message as "Message",
-            refresh_start_time as "Last Refresh",
-            completion_target as "Target"
+            h.name as "Name",
+            h.schema_name as "Schema",
+            h.state_code as "State",
+            h.state_message as "Message",
+            h.refresh_start_time as "Last Refresh",
+            h.completion_target as "Target"
         FROM TABLE(INFORMATION_SCHEMA.DYNAMIC_TABLE_REFRESH_HISTORY(
             NAME_PREFIX => 'DBAONTAP_ANALYTICS'
-        ))
-        WHERE DATEDIFF('hour', refresh_start_time, CURRENT_TIMESTAMP()) < 24
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY name ORDER BY refresh_start_time DESC) = 1
+        )) h
+        INNER JOIN DBAONTAP_ANALYTICS.INFORMATION_SCHEMA.TABLES t
+            ON h.name = t.TABLE_NAME AND h.schema_name = t.TABLE_SCHEMA
+        WHERE DATEDIFF('hour', h.refresh_start_time, CURRENT_TIMESTAMP()) < 24
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY h.name, h.schema_name ORDER BY h.refresh_start_time DESC) = 1
     """)
     
     if dt_status is not None and len(dt_status) > 0:
