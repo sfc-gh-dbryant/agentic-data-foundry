@@ -845,7 +845,44 @@ def render_chatbot_tab():
     
     if "chat_messages" not in st.session_state:
         st.session_state.chat_messages = []
-    
+
+    if "example_questions" not in st.session_state:
+        st.session_state.example_questions = None
+    if st.session_state.example_questions is None:
+        try:
+            gold_meta = run_query("""
+                SELECT c.TABLE_NAME, LISTAGG(c.COLUMN_NAME, ', ') WITHIN GROUP (ORDER BY c.ORDINAL_POSITION) as COLS
+                FROM DBAONTAP_ANALYTICS.INFORMATION_SCHEMA.COLUMNS c
+                INNER JOIN DBAONTAP_ANALYTICS.INFORMATION_SCHEMA.TABLES t
+                    ON c.TABLE_SCHEMA = t.TABLE_SCHEMA AND c.TABLE_NAME = t.TABLE_NAME
+                WHERE c.TABLE_SCHEMA = 'GOLD' AND t.TABLE_TYPE = 'BASE TABLE'
+                GROUP BY c.TABLE_NAME ORDER BY c.TABLE_NAME
+            """)
+            if gold_meta is not None and len(gold_meta) > 0:
+                table_desc = "; ".join(f"{r['TABLE_NAME']}: {r['COLS']}" for _, r in gold_meta.iterrows())
+                llm_result = run_query(f"""
+                    SELECT SNOWFLAKE.CORTEX.COMPLETE('llama3.1-8b',
+                    'Generate exactly 6 short natural-language business questions a user could ask about data in these Gold tables. Each question on its own line, no numbering, no bullets, no quotes. Tables: {table_desc}')
+                """)
+                if llm_result is not None and len(llm_result) > 0:
+                    raw = llm_result.iloc[0, 0]
+                    lines = [l.strip().lstrip('0123456789.-) ') for l in raw.strip().split('\n') if l.strip() and len(l.strip()) > 10]
+                    st.session_state.example_questions = lines[:6] if lines else []
+                else:
+                    st.session_state.example_questions = []
+            else:
+                st.session_state.example_questions = []
+        except:
+            st.session_state.example_questions = []
+
+    if not st.session_state.chat_messages and st.session_state.example_questions:
+        st.markdown("**💡 Try asking:**")
+        cols = st.columns(2)
+        for i, q in enumerate(st.session_state.example_questions):
+            if cols[i % 2].button(q, key=f"example_q_{i}", use_container_width=True):
+                st.session_state.pending_prompt = q
+                st.rerun()
+
     chat_container = st.container()
     with chat_container:
         for message in st.session_state.chat_messages:
@@ -858,7 +895,7 @@ def render_chatbot_tab():
                 if "data" in message and message["data"] is not None:
                     st.dataframe(message["data"], use_container_width=True)
     
-    prompt = _chat_input("Ask a question about your data...")
+    prompt = st.session_state.pop("pending_prompt", None) or _chat_input("Ask a question about your data...")
     
     if prompt:
         st.session_state.chat_messages.append({"role": "user", "content": prompt})
