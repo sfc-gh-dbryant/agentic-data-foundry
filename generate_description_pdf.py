@@ -11,6 +11,14 @@ from reportlab.platypus import (
     PageBreak, HRFlowable, KeepTogether
 )
 import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from diagram_helpers import (
+    diagram_system_architecture, diagram_nine_stage_pipeline,
+    diagram_cdc_replication, diagram_five_phase_workflow,
+    diagram_gold_build, diagram_three_layer_control,
+    diagram_lineage_map, diagram_script_dependency,
+)
 
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_PDF = os.path.join(OUTPUT_DIR, "DESCRIPTION.pdf")
@@ -305,36 +313,8 @@ def build_section1(elements, styles):
         styles['BodyText2']))
     elements.append(Spacer(1, 4))
 
-    add_diagram(elements, """
-+------------------+     +------------------+     +------------------+
-|   PostgreSQL     |     |   PostgreSQL     |     |   Snowflake      |
-|   SOURCE         |---->|   LANDING        |---->|   "public"       |
-|   (OLTP App DB)  |     |   (CDC Staging)  |     |   (Openflow CDC) |
-+------------------+     +------------------+     +------------------+
-   Logical Replication       Subscription         _SNOWFLAKE_DELETED
-                                                  _SNOWFLAKE_UPDATED_AT
-                                    |
-                                    v
-  +---------------------------------------------------------------+
-  |                    DBAONTAP_ANALYTICS                          |
-  |                                                               |
-  |   +----------+       +----------+       +----------+          |
-  |   |  BRONZE  |------>|  SILVER  |------>|   GOLD   |          |
-  |   | VARIANT  |       | CDC-Aware|       | Aggregate|          |
-  |   | DTs (5)  |       |  DTs (5) |       |  DTs (5) |          |
-  |   +----------+       +----------+       +----------+          |
-  |        |                   |                  |               |
-  |   OBJECT_CONSTRUCT   LLM-Generated      LLM-Generated        |
-  |   Schema-on-Read     ROW_NUMBER()       Multi-Source          |
-  |                      Deduplication      Aggregation           |
-  |                                                               |
-  |   +-----------+  +-----------+  +-----------+  +----------+  |
-  |   |  METADATA |  |  AGENTS   |  |KNOWLEDGE  |  | SEMANTIC |  |
-  |   |  Contracts|  |  20+ SPs  |  |  GRAPH    |  |  VIEWS   |  |
-  |   |  Direct.  |  |  Workflow |  |  200+nodes|  |  Cortex  |  |
-  |   |  Learnings|  |  Engine   |  |  Lineage  |  |  Analyst |  |
-  |   +-----------+  +-----------+  +-----------+  +----------+  |
-  +---------------------------------------------------------------+""", styles, title="System Architecture Overview")
+    elements.append(diagram_system_architecture())
+    elements.append(Spacer(1, 6))
 
     t = make_table(
         ["Component", "Technology", "Count"],
@@ -371,24 +351,8 @@ def build_section2(elements, styles):
         styles['BodyText2']))
     elements.append(Spacer(1, 4))
 
-    add_diagram(elements, """
- STAGE 1       STAGE 2        STAGE 3         STAGE 4         STAGE 5
- PG Source ---> PG Landing ---> Snowflake ---> BRONZE ---------> SILVER
- (OLTP)     Logical Repl.    "public" via    VARIANT DTs      CDC-Aware DTs
- 5 tables   (Subscription)    Openflow CDC   OBJECT_CONSTRUCT  ROW_NUMBER()
-                                              (*)              Dedup
-
-                              STAGE 6         STAGE 7         STAGE 8
-                              GOLD ---------> KNOWLEDGE -----> SEMANTIC
-                              Aggregation     GRAPH            VIEWS
-                              DTs (multi-     KG_NODE/EDGE    Hybrid SV
-                              source joins)   Lineage Map     (KG + LLM)
-
-                                              STAGE 9
-                                              AI CONSUMPTION
-                                              Cortex Analyst
-                                              Natural Language
-                                              --> SQL --> Results""", styles, title="Nine-Stage Pipeline")
+    elements.append(diagram_nine_stage_pipeline())
+    elements.append(Spacer(1, 6))
 
     stages = [
         ["1. PG Source", "PostgreSQL managed instance (SOURCE_PG)", "5 application tables with seed data, dbaontap_pub publication"],
@@ -432,19 +396,8 @@ def build_section3(elements, styles):
     elements.append(Spacer(1, 6))
 
     elements.append(Paragraph("3.2 Replication Architecture", styles['SubsectionTitle']))
-    add_diagram(elements, """
-  SOURCE_PG                    LANDING_PG                 Snowflake
-  +-------------------+        +-------------------+      +-------------------+
-  | customers         |        | customers         |      | "public".customers|
-  | products          | -----> | products          | ---> | "public".products |
-  | orders            | Logical| orders            | Open | "public".orders   |
-  | order_items       | Replic.| order_items       | flow | "public".order_   |
-  | support_tickets   |        | support_tickets   | CDC  |   items           |
-  +-------------------+        +-------------------+      | "public".support_ |
-  dbaontap_pub                 dbaontap_sub               |   tickets         |
-  (Publication)                (Subscription)              +-------------------+
-                                                          + _SNOWFLAKE_DELETED
-                                                          + _SNOWFLAKE_UPDATED_AT""", styles, title="Two-Hop CDC Replication")
+    elements.append(diagram_cdc_replication())
+    elements.append(Spacer(1, 6))
 
     elements.append(Paragraph(
         "<b>Openflow CDC enrichment:</b> When data arrives in Snowflake, the Openflow connector appends two system "
@@ -516,23 +469,8 @@ def build_section5(elements, styles):
     elements.append(Spacer(1, 4))
 
     elements.append(Paragraph("5.1 The Five-Phase Workflow", styles['SubsectionTitle']))
-    add_diagram(elements, """
-  +----------+    +-----------+    +-----------+    +-----------+    +-----------+
-  | PHASE 1  |    | PHASE 2   |    | PHASE 3   |    | PHASE 4   |    | PHASE 5   |
-  | TRIGGER  |--->| PLANNER   |--->| EXECUTOR  |--->| VALIDATOR |--->| REFLECTOR |
-  |          |    |           |    |           |    |           |    |           |
-  | Detect   |    | LLM       |    | LLM       |    | Row count |    | LLM       |
-  | events:  |    | analyzes  |    | generates |    | comparison|    | extracts  |
-  | -New tbl |    | schema +  |    | CREATE OR |    | (<5% tol.)|    | learnings:|
-  | -Schema  |    | quality + |    | REPLACE   |    | Schema    |    | -Success  |
-  |  change  |    | learnings |    | DYNAMIC   |    | validation|    |  patterns |
-  | -Quality |    | +directs. |    | TABLE DDL |    | Type      |    | -Failure  |
-  |  breach  |    | Outputs:  |    | 3-retry   |    | checks    |    |  patterns |
-  |          |    | strategy  |    | self-corr.|    |           |    | -Optimiz. |
-  +----------+    +-----------+    +-----------+    +-----------+    +-----------+
-       |               |               |                |                |
-  WORKFLOW_        PLANNER_        TRANSFORMATION_  VALIDATION_     WORKFLOW_
-  EXECUTIONS       DECISIONS       LOG              RESULTS         LEARNINGS""", styles, title="5-Phase Agentic Workflow Engine")
+    elements.append(diagram_five_phase_workflow())
+    elements.append(Spacer(1, 6))
 
     elements.append(Paragraph("5.2 Phase Details", styles['SubsectionTitle']))
 
@@ -637,28 +575,8 @@ def build_section6(elements, styles):
     elements.append(Spacer(1, 6))
 
     elements.append(Paragraph("6.2 Two-Strategy Discovery Algorithm", styles['SubsectionTitle']))
-    add_diagram(elements, """
-  BUILD_GOLD_FOR_NEW_TABLES(dry_run, refresh_svs)
-  |
-  +-- STRATEGY 1: Missing Gold Targets
-  |   Query TABLE_LINEAGE_MAP for AGGREGATES_TO edges where
-  |   target Gold table does NOT exist in INFORMATION_SCHEMA
-  |   Example: MAP says SUPPORT_TICKETS -> SUPPORT_METRICS,
-  |            but GOLD.SUPPORT_METRICS doesn't exist yet
-  |
-  +-- STRATEGY 2: Uncovered Silver Tables
-  |   Find Silver tables with NO AGGREGATES_TO mapping at all
-  |   These are "orphan" tables the agents build Gold for autonomously
-  |
-  +-- For each work item:
-      |-- Gather all Silver column info + existing Gold context
-      |-- Detect deleted-column naming (_SNOWFLAKE_DELETED vs IS_DELETED)
-      |-- Fetch matching Transformation Directives
-      |-- Build LLM prompt -> Claude 3.5 Sonnet
-      |-- VALIDATE_GOLD_DDL (compile check before execution)
-      |-- Execute with 3-retry loop (errors fed back to LLM)
-      |-- REGISTER_LINEAGE_FROM_DDL (auto-register new edges)
-      |-- Refresh KG + optionally regenerate Semantic Views""", styles, title="Gold Build Algorithm")
+    elements.append(diagram_gold_build())
+    elements.append(Spacer(1, 6))
 
     elements.append(Paragraph("6.3 Schema Drift Remediation", styles['SubsectionTitle']))
     elements.append(Paragraph(
@@ -691,20 +609,8 @@ def build_section7(elements, styles):
         styles['BodyText2']))
     elements.append(Spacer(1, 4))
 
-    add_diagram(elements, """
-  +-------------------------+    +-------------------------+    +-------------------------+
-  | SCHEMA CONTRACTS        |    | TRANSFORMATION          |    | LEARNINGS               |
-  | (Structure)             |    | DIRECTIVES (Intent)     |    | (Memory)                |
-  |                         |    |                         |    |                         |
-  | "What must the output   |    | "Why does this data     |    | "What has worked in     |
-  |  look like?"            |    |  exist?"                |    |  the past?"             |
-  |                         |    |                         |    |                         |
-  | - Column names & types  |    | - Business purpose      |    | - Success patterns      |
-  | - Required fields       |    | - Use case context      |    | - Failure patterns      |
-  | - Naming conventions    |    | - Granularity needs     |    | - Optimizations         |
-  | - Enforced at Executor  |    | - Injected at Planner   |    | - Confidence scores     |
-  +-------------------------+    +-------------------------+    +-------------------------+
-  SILVER_SCHEMA_CONTRACTS        TRANSFORMATION_DIRECTIVES       WORKFLOW_LEARNINGS""", styles, title="Three-Layer Control Model")
+    elements.append(diagram_three_layer_control())
+    elements.append(Spacer(1, 6))
 
     elements.append(Paragraph("7.1 Schema Contracts", styles['SubsectionTitle']))
     elements.append(Paragraph(
@@ -817,26 +723,8 @@ def build_section9(elements, styles):
         styles['BodyText2']))
     elements.append(Spacer(1, 4))
 
-    add_diagram(elements, """
-  TABLE_LINEAGE_MAP (Dual Population Model)
-  +-----------+-----------+-----------+------------------+---------+
-  | SOURCE    | TARGET    | EDGE      | RELATIONSHIP     | ORIGIN  |
-  | SCHEMA    | SCHEMA    | TYPE      | LABEL            |         |
-  +-----------+-----------+-----------+------------------+---------+
-  | BRONZE    | SILVER    | TRANSFORMS| Bronze->Silver   | Seed    |  <-- Human-seeded
-  | BRONZE    | SILVER    | TRANSFORMS| Bronze->Silver   | Seed    |      (architectural
-  | ...       | ...       | ...       | ...              | Seed    |       intent)
-  +-----------+-----------+-----------+------------------+---------+
-  | SILVER    | GOLD      | AGGREGATES| Silver->Gold     | Seed    |  <-- Human-seeded
-  | SILVER    | GOLD      | AGGREGATES| Silver->Gold     | Agent   |  <-- Agent-populated
-  | ...       | ...       | ...       | ...              | Agent   |      (auto-registered
-  +-----------+-----------+-----------+------------------+---------+       via MERGE)
-
-  Consumers:
-  - POPULATE_KG_FROM_INFORMATION_SCHEMA (builds KG edges)
-  - BUILD_GOLD_FOR_NEW_TABLES (discovers gaps)
-  - Schema drift detection (downstream impact)
-  - KG visualization (Streamlit lineage diagrams)""", styles, title="TABLE_LINEAGE_MAP: Single Source of Truth")
+    elements.append(diagram_lineage_map())
+    elements.append(Spacer(1, 6))
 
     elements.append(Paragraph(
         "<b>Human-Seeded Entries:</b> Data engineers declare known relationships (e.g., CUSTOMERS_VARIANT \u2192 "
@@ -1030,44 +918,8 @@ def build_section13(elements, styles):
         styles['BodyText2']))
     elements.append(Spacer(1, 4))
 
-    add_diagram(elements, """
-  PRODUCTION PIPELINE (Numbered Subdirectories)
-  ==============================================
-  01_source/setup.sql -> 01_source/seed_data.sql
-                           |
-  02_landing/setup.sql -> 02_landing/create_tables.sql
-                           |
-  04_openflow/setup.sql (creates DBAONTAP_ANALYTICS + 7 schemas)
-       |
-       +-> 05_bronze/setup.sql (5 Bronze DTs)
-       |       |
-       |       +-> 06_silver/setup.sql (5 Silver DTs)
-       |               |
-       |               +-> 07_gold/setup.sql (5 Gold DTs)
-       |                       |
-       |                       +-> 09_semantic_views/setup.sql (SV pipeline SP)
-       |                               |
-       |                               +-> 10_intelligence/setup.sql (permissions)
-       |
-       +-> 08_agents/setup.sql (metadata tables + utility SPs)
-
-  EVOLUTIONARY SCRIPTS (Feature Development)
-  ===========================================
-  07_agentic_workflow_engine.sql (5-phase workflow)
-    +-> 08_decision_point_2.sql (schema change detection)
-    |     +-> 08c_schema_detection_tuning.sql (ignore patterns)
-    |           +-> 08e_detect_schema_changes_with_kg.sql (KG-enhanced)
-    +-> 13_transformation_directives.sql (three-layer control)
-
-  15_table_lineage_map.sql (foundational metadata)
-    +-> 09_knowledge_graph.sql (KG population from lineage map)
-    |     +-> 11_hybrid_semantic_view_generator.sql
-    |     +-> 12_fixed_hybrid_semantic_view.sql
-    |     +-> gold_schema_propagation.sql
-    +-> 16_register_lineage.sql (auto-register lineage from DDL)
-    +-> 14_ddl_validation.sql (compile-check DDL)
-          +-> 17_gold_agentic_executor.sql (validated Gold execution)
-                +-> 18_build_gold_for_new_tables.sql (two-strategy discovery)""", styles, title="Script Dependency Tree")
+    elements.append(diagram_script_dependency())
+    elements.append(Spacer(1, 6))
 
     elements.append(Spacer(1, 10))
 
