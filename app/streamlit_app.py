@@ -3367,15 +3367,15 @@ def render_knowledge_graph_tab():
                             label = t.replace("_", "\\n", 1) if len(t) > 15 else t
                             dot_lines.append(f'  G_{t} [label="{t}", fillcolor=green2];')
                         dot_lines.append('}')
-                    b2s = {"CUSTOMERS_VARIANT": "CUSTOMERS", "PRODUCTS_VARIANT": "PRODUCTS", "ORDERS_VARIANT": "ORDERS", "ORDER_ITEMS_VARIANT": "ORDER_ITEMS", "SUPPORT_TICKETS_VARIANT": "SUPPORT_TICKETS"}
+                    b2s = {"CUSTOMERS_VARIANT": "CUSTOMERS", "PRODUCTS_VARIANT": "PRODUCTS_VARIANT", "ORDERS_VARIANT": "ORDERS", "ORDER_ITEMS_VARIANT": "ORDER_ITEMS", "SUPPORT_TICKETS_VARIANT": "SUPPORT_TICKETS"}
                     for bt, st_name in b2s.items():
                         if bt in bronze_tables and st_name in silver_tables:
                             dot_lines.append(f'  {bt} -> S_{st_name} [label="transform"];')
                     s2g_static = [("CUSTOMERS", "CUSTOMER_360", "aggregate"), ("ORDERS", "CUSTOMER_360", "join"), ("SUPPORT_TICKETS", "CUSTOMER_360", "join"),
-                           ("PRODUCTS", "PRODUCT_PERFORMANCE", "aggregate"), ("ORDER_ITEMS", "PRODUCT_PERFORMANCE", "join"), ("ORDERS", "PRODUCT_PERFORMANCE", "join"),
+                           ("PRODUCTS_VARIANT", "PRODUCT_PERFORMANCE_METRICS", "aggregate"), ("ORDER_ITEMS", "PRODUCT_PERFORMANCE_METRICS", "join"),
                            ("ORDERS", "ORDER_SUMMARY", "aggregate"), ("CUSTOMERS", "ORDER_SUMMARY", "join"),
-                           ("CUSTOMERS", "CUSTOMER_METRICS", "aggregate"), ("ORDERS", "CUSTOMER_METRICS", "join"),
-                           ("CUSTOMERS", "ML_CUSTOMER_FEATURES", "features"), ("ORDERS", "ML_CUSTOMER_FEATURES", "features")]
+                           ("CUSTOMERS", "ML_CUSTOMER_FEATURES", "features"), ("ORDERS", "ML_CUSTOMER_FEATURES", "features"),
+                           ("SUPPORT_TICKETS", "SUPPORT_METRICS", "aggregate")]
                     s2g_dynamic = []
                     for gt in gold_tables_set:
                         if gt not in {g for _, g, _ in s2g_static}:
