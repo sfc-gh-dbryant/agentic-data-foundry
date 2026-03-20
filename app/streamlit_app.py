@@ -3561,8 +3561,8 @@ def render_architecture_tab():
 
     kg_ok = False
     try:
-        kg_df = run_query("SELECT COUNT(*) as cnt FROM DBAONTAP_ANALYTICS.KNOWLEDGE_GRAPH.KG_NODE")
-        kg_ok = kg_df is not None and len(kg_df) > 0 and kg_df['CNT'].iloc[0] > 10
+        kg_df = run_query("SELECT COUNT(*) as cnt FROM DBAONTAP_ANALYTICS.KNOWLEDGE_GRAPH.KG_EDGE WHERE edge_type = 'AGGREGATES_TO'")
+        kg_ok = kg_df is not None and len(kg_df) > 0 and kg_df['CNT'].iloc[0] > 0
     except:
         pass
 
