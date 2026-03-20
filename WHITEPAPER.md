@@ -18,6 +18,8 @@ Modern data teams spend an estimated 40-60% of their time on pipeline maintenanc
 
 Meanwhile, the AI landscape has shifted dramatically. Gartner predicts that 40% of enterprise applications will feature task-specific AI agents by 2026, up from less than 5% in 2025 [2]. McKinsey's research on agentic AI identifies autonomous task completion as a defining capability of the next wave of enterprise AI adoption [3]. Snowflake's own platform evolution — with Cortex AI, Dynamic Tables, and Cortex Agents — has created the infrastructure for AI-native data engineering [4].
 
+Snowflake's strategic direction validates this trajectory. In March 2026, the company announced Project SnowWork — an autonomous enterprise AI platform designed to help business users "simply ask for what they need" and have AI "securely complete multi-step tasks based on conversational prompts" [14]. CEO Sridhar Ramaswamy described the vision: "We are entering the era of the agentic enterprise... embedding intelligence directly into the operating fabric of the enterprise." Industry analyst Sanjeev Mohan (SanjMo) observed that Snowflake is "extending its platform from a system of insight to a system of action, which is where measurable business value is ultimately realized" [14]. The Agentic Data Foundry embodies this same architectural principle — applied specifically to data engineering — where governed data, shared business definitions, and autonomous execution converge to replace manual pipeline construction with intent-driven automation.
+
 The Agentic Data Foundry synthesizes these trends into a working system. It is not a theoretical framework but a deployed platform that has autonomously discovered tables, generated transformation logic, validated results, and learned from its own execution history — all guided by human-defined intent rather than human-written code.
 
 ---
@@ -368,6 +370,8 @@ The Agentic Data Foundry demonstrates that the transition from imperative to dec
 
 The data engineer's role evolves from builder to describer, from coder to curator, from reactive debugger to proactive architect. This is not the end of data engineering — it is the beginning of data engineering's most productive era.
 
+The trajectory is clear. Snowflake's March 2026 launch of Project SnowWork — an autonomous AI platform that enables business users to move "from intent to actions and outcomes" on governed data [14] — demonstrates that the agentic paradigm is not a research concept but an emerging product category. The Agentic Data Foundry occupies a specific and critical position in this landscape: where Project SnowWork brings agentic intelligence to business users consuming data, the Agentic Data Foundry brings the same principles to the data engineering teams *producing* it. Together, they represent the full arc of the agentic enterprise — from data creation to data consumption, from pipeline to insight to action, all governed by intent rather than code.
+
 ---
 
 ## References
@@ -397,6 +401,8 @@ The data engineer's role evolves from builder to describer, from coder to curato
 [12] Deloitte, "The State of AI in the Enterprise," Deloitte AI Institute, 2026. Available: https://www.deloitte.com/us/en/what-we-do/capabilities/applied-artificial-intelligence/content/state-of-ai-in-the-enterprise.html
 
 [13] NVIDIA, "State of AI Report 2026: How AI Is Driving Revenue, Cutting Costs and Boosting Productivity," NVIDIA Blog, March 2026. Available: https://blogs.nvidia.com/blog/state-of-ai-report-2026/
+
+[14] Snowflake, "Snowflake Launches Project SnowWork, Bringing Outcome-Driven AI to Every Business User," Snowflake Press Release, March 2026. Available: https://www.snowflake.com/en/news/press-releases/snowflake-launches-project-snowwork-bringing-outcome-driven-ai-to-every-business-user/
 
 ---
 

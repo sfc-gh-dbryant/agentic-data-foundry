@@ -239,6 +239,19 @@ def build_section1(elements, styles):
         styles['BodyText2']))
     elements.append(Spacer(1, 4))
     elements.append(Paragraph(
+        "Snowflake's strategic direction validates this trajectory. In March 2026, the company announced "
+        "<b>Project SnowWork</b> \u2014 an autonomous enterprise AI platform designed to help business users "
+        "\"simply ask for what they need\" and have AI \"securely complete multi-step tasks based on conversational "
+        "prompts\" [14]. CEO Sridhar Ramaswamy described the vision: \"We are entering the era of the agentic "
+        "enterprise... embedding intelligence directly into the operating fabric of the enterprise.\" Industry analyst "
+        "Sanjeev Mohan (SanjMo) observed that Snowflake is \"extending its platform from a system of insight to a "
+        "system of action, which is where measurable business value is ultimately realized\" [14]. The Agentic Data "
+        "Foundry embodies this same architectural principle \u2014 applied specifically to data engineering \u2014 where "
+        "governed data, shared business definitions, and autonomous execution converge to replace manual pipeline "
+        "construction with intent-driven automation.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
         "The Agentic Data Foundry synthesizes these trends into a working system. It is not a theoretical framework but "
         "a deployed platform that has autonomously discovered tables, generated transformation logic, validated results, "
         "and learned from its own execution history \u2014 all guided by human-defined intent rather than human-written code.",
@@ -707,6 +720,17 @@ def build_section11(elements, styles):
         "proactive architect. This is not the end of data engineering \u2014 it is the beginning of data engineering's "
         "most productive era.",
         styles['BodyText2']))
+    elements.append(Spacer(1, 6))
+    elements.append(Paragraph(
+        "The trajectory is clear. Snowflake's March 2026 launch of Project SnowWork \u2014 an autonomous AI platform "
+        "that enables business users to move \"from intent to actions and outcomes\" on governed data [14] \u2014 "
+        "demonstrates that the agentic paradigm is not a research concept but an emerging product category. The Agentic "
+        "Data Foundry occupies a specific and critical position in this landscape: where Project SnowWork brings agentic "
+        "intelligence to business users <i>consuming</i> data, the Agentic Data Foundry brings the same principles to "
+        "the data engineering teams <i>producing</i> it. Together, they represent the full arc of the agentic enterprise "
+        "\u2014 from data creation to data consumption, from pipeline to insight to action, all governed by intent "
+        "rather than code.",
+        styles['BodyText2']))
     elements.append(Spacer(1, 16))
 
 
@@ -728,6 +752,7 @@ def build_references(elements, styles):
         '[11] IDC, "Business Opportunity of AI: GenAI Delivering New Business Value and Increasing ROI," 2025. idc.com',
         '[12] Deloitte, "The State of AI in the Enterprise," Deloitte AI Institute, 2026. deloitte.com',
         '[13] NVIDIA, "State of AI Report 2026: How AI Is Driving Revenue, Cutting Costs and Boosting Productivity," Mar 2026. blogs.nvidia.com',
+        '[14] Snowflake, "Snowflake Launches Project SnowWork, Bringing Outcome-Driven AI to Every Business User," Mar 2026. snowflake.com',
     ]
     for ref in refs:
         elements.append(Paragraph(ref, styles['RefText']))
