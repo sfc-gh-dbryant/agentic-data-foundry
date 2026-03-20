@@ -8,17 +8,14 @@ DECLARE
     columns_added INTEGER DEFAULT 0;
     edges_added INTEGER DEFAULT 0;
 BEGIN
-    -- Clear stale data before repopulating
     TRUNCATE TABLE KG_EDGE;
     TRUNCATE TABLE KG_NODE;
 
-    -- Add Database node
     INSERT INTO KG_NODE (node_id, node_type, name, description, properties)
     SELECT ''DB:DBAONTAP_ANALYTICS'', ''DATABASE'', ''DBAONTAP_ANALYTICS'',
            ''Analytics database for agentic demo'',
            OBJECT_CONSTRUCT(''created_at'', CURRENT_TIMESTAMP());
 
-    -- Add Schema nodes
     INSERT INTO KG_NODE (node_id, node_type, name, description, properties)
     SELECT DISTINCT
         ''SCHEMA:DBAONTAP_ANALYTICS.'' || TABLE_SCHEMA,
@@ -44,7 +41,6 @@ BEGIN
     FROM DBAONTAP_ANALYTICS.INFORMATION_SCHEMA.TABLES
     WHERE TABLE_SCHEMA IN (''BRONZE'', ''SILVER'', ''GOLD'', ''AGENTS'', ''METADATA'');
 
-    -- Add Table nodes
     INSERT INTO KG_NODE (node_id, node_type, name, description, properties)
     SELECT
         ''TABLE:DBAONTAP_ANALYTICS.'' || TABLE_SCHEMA || ''.'' || TABLE_NAME,
@@ -69,7 +65,6 @@ BEGIN
 
     SELECT COUNT(*) INTO :tables_added FROM KG_NODE WHERE node_type = ''TABLE'';
 
-    -- Add Column nodes
     INSERT INTO KG_NODE (node_id, node_type, name, description, properties)
     SELECT
         ''COLUMN:DBAONTAP_ANALYTICS.'' || TABLE_SCHEMA || ''.'' || TABLE_NAME || ''.'' || COLUMN_NAME,
@@ -87,7 +82,6 @@ BEGIN
 
     SELECT COUNT(*) INTO :columns_added FROM KG_NODE WHERE node_type = ''COLUMN'';
 
-    -- Add SCHEMA -> TABLE edges (CONTAINS)
     INSERT INTO KG_EDGE (edge_id, source_node_id, target_node_id, edge_type, properties)
     SELECT
         ''EDGE:CONTAINS:'' || n_schema.node_id || '':'' || n_table.node_id,
@@ -99,7 +93,6 @@ BEGIN
     JOIN KG_NODE n_table ON n_table.properties:schema::VARCHAR = n_schema.name
     WHERE n_schema.node_type = ''SCHEMA'' AND n_table.node_type = ''TABLE'';
 
-    -- Add TABLE -> COLUMN edges (HAS_COLUMN)
     INSERT INTO KG_EDGE (edge_id, source_node_id, target_node_id, edge_type, properties)
     SELECT
         ''EDGE:HAS_COLUMN:'' || n_table.node_id || '':'' || n_col.node_id,
@@ -111,49 +104,28 @@ BEGIN
     JOIN KG_NODE n_col ON n_col.properties:table_id::VARCHAR = n_table.node_id
     WHERE n_table.node_type = ''TABLE'' AND n_col.node_type = ''COLUMN'';
 
-    -- Add BRONZE -> SILVER lineage edges (TRANSFORMS_TO)
+    -- Lineage edges driven by TABLE_LINEAGE_MAP (single source of truth)
     INSERT INTO KG_EDGE (edge_id, source_node_id, target_node_id, edge_type, properties)
     SELECT
-        ''EDGE:TRANSFORMS_TO:'' || bronze.node_id || '':'' || silver.node_id,
-        bronze.node_id,
-        silver.node_id,
-        ''TRANSFORMS_TO'',
+        ''EDGE:'' || lm.EDGE_TYPE || '':TABLE:DBAONTAP_ANALYTICS.'' || lm.SOURCE_SCHEMA || ''.'' || lm.SOURCE_TABLE
+            || '':TABLE:DBAONTAP_ANALYTICS.'' || lm.TARGET_SCHEMA || ''.'' || lm.TARGET_TABLE,
+        ''TABLE:DBAONTAP_ANALYTICS.'' || lm.SOURCE_SCHEMA || ''.'' || lm.SOURCE_TABLE,
+        ''TABLE:DBAONTAP_ANALYTICS.'' || lm.TARGET_SCHEMA || ''.'' || lm.TARGET_TABLE,
+        lm.EDGE_TYPE,
         OBJECT_CONSTRUCT(
-            ''transformation_type'', ''AGENTIC_SILVER'',
-            ''description'', ''Bronze VARIANT transformed to typed Silver by agentic workflow''
+            ''transformation_type'', lm.EDGE_TYPE,
+            ''description'', lm.DESCRIPTION,
+            ''relationship_label'', lm.RELATIONSHIP_LABEL
         )
-    FROM KG_NODE bronze
-    JOIN KG_NODE silver ON REPLACE(bronze.name, ''_VARIANT'', '''') = silver.name
-    WHERE bronze.node_type = ''TABLE''
-      AND bronze.properties:schema::VARCHAR = ''BRONZE''
-      AND bronze.name LIKE ''%_VARIANT''
-      AND silver.node_type = ''TABLE''
-      AND silver.properties:schema::VARCHAR = ''SILVER'';
-
-    -- Add SILVER -> GOLD lineage edges (AGGREGATES_TO) - dynamically from Gold DDL parsing
-    INSERT INTO KG_EDGE (edge_id, source_node_id, target_node_id, edge_type, properties)
-    SELECT
-        ''EDGE:AGGREGATES_TO:'' || silver.node_id || '':'' || gold.node_id,
-        silver.node_id,
-        gold.node_id,
-        ''AGGREGATES_TO'',
-        OBJECT_CONSTRUCT(
-            ''transformation_type'', ''AGGREGATION'',
-            ''description'', ''Silver table aggregated to Gold metrics''
-        )
-    FROM KG_NODE silver
-    CROSS JOIN KG_NODE gold
-    WHERE silver.node_type = ''TABLE''
-      AND silver.properties:schema::VARCHAR = ''SILVER''
-      AND gold.node_type = ''TABLE''
-      AND gold.properties:schema::VARCHAR = ''GOLD''
-      AND (
-          (silver.name = ''CUSTOMERS'' AND gold.name IN (''CUSTOMER_360'', ''ML_CUSTOMER_FEATURES''))
-          OR (silver.name = ''ORDERS'' AND gold.name IN (''ORDER_SUMMARY'', ''CUSTOMER_360''))
-          OR (silver.name = ''ORDER_ITEMS'' AND gold.name IN (''ORDER_SUMMARY'', ''PRODUCT_PERFORMANCE_METRICS''))
-          OR (silver.name = ''PRODUCTS_VARIANT'' AND gold.name = ''PRODUCT_PERFORMANCE_METRICS'')
-          OR (silver.name = ''SUPPORT_TICKETS'' AND gold.name IN (''SUPPORT_METRICS'', ''CUSTOMER_360''))
-      );
+    FROM DBAONTAP_ANALYTICS.METADATA.TABLE_LINEAGE_MAP lm
+    WHERE EXISTS (
+        SELECT 1 FROM KG_NODE src
+        WHERE src.node_id = ''TABLE:DBAONTAP_ANALYTICS.'' || lm.SOURCE_SCHEMA || ''.'' || lm.SOURCE_TABLE
+    )
+    AND EXISTS (
+        SELECT 1 FROM KG_NODE tgt
+        WHERE tgt.node_id = ''TABLE:DBAONTAP_ANALYTICS.'' || lm.TARGET_SCHEMA || ''.'' || lm.TARGET_TABLE
+    );
 
     SELECT COUNT(*) INTO :edges_added FROM KG_EDGE;
 

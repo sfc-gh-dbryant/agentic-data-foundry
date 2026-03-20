@@ -2942,7 +2942,7 @@ def render_reset_tab():
                             for gt_name in gold_list['TABLE_NAME'].tolist():
                                 run_query(f"DROP DYNAMIC TABLE IF EXISTS DBAONTAP_ANALYTICS.GOLD.{gt_name}", fetch=False)
                     except:
-                        for tbl in ["CUSTOMER_360", "PRODUCT_PERFORMANCE", "ORDER_SUMMARY", "CUSTOMER_METRICS", "ML_CUSTOMER_FEATURES"]:
+                        for tbl in ["CUSTOMER_360", "PRODUCT_PERFORMANCE_METRICS", "ORDER_SUMMARY", "ML_CUSTOMER_FEATURES", "SUPPORT_METRICS"]:
                             run_query(f"DROP DYNAMIC TABLE IF EXISTS DBAONTAP_ANALYTICS.GOLD.{tbl}", fetch=False)
                     
                     # 3. Drop Silver Dynamic Tables
@@ -3117,7 +3117,7 @@ def render_demo_control_tab():
                 for schema, dts in [
                     ("BRONZE", ["CUSTOMERS_VARIANT", "ORDERS_VARIANT", "PRODUCTS_VARIANT", "ORDER_ITEMS_VARIANT", "SUPPORT_TICKETS_VARIANT"]),
                     ("SILVER", ["CUSTOMERS", "ORDERS", "PRODUCTS", "ORDER_ITEMS", "SUPPORT_TICKETS"]),
-                    ("GOLD", ["CUSTOMER_360", "PRODUCT_PERFORMANCE", "ORDER_SUMMARY"])
+                    ("GOLD", ["CUSTOMER_360", "PRODUCT_PERFORMANCE_METRICS", "ORDER_SUMMARY", "ML_CUSTOMER_FEATURES", "SUPPORT_METRICS"])
                 ]:
                     for dt in dts:
                         try:
@@ -3143,8 +3143,8 @@ def render_demo_control_tab():
                     pass
                 
                 for schema, dts in [
-                    ("GOLD", ["CUSTOMER_360", "PRODUCT_PERFORMANCE", "ORDER_SUMMARY"]),
-                    ("SILVER", ["CUSTOMERS", "ORDERS", "PRODUCTS", "ORDER_ITEMS", "SUPPORT_TICKETS"]),
+                    ("GOLD", ["CUSTOMER_360", "PRODUCT_PERFORMANCE_METRICS", "ORDER_SUMMARY", "ML_CUSTOMER_FEATURES", "SUPPORT_METRICS"]),
+                    ("SILVER", ["CUSTOMERS", "ORDERS", "PRODUCTS_VARIANT", "ORDER_ITEMS", "SUPPORT_TICKETS"]),
                     ("BRONZE", ["CUSTOMERS_VARIANT", "ORDERS_VARIANT", "PRODUCTS_VARIANT", "ORDER_ITEMS_VARIANT", "SUPPORT_TICKETS_VARIANT"])
                 ]:
                     for dt in dts:
@@ -3252,7 +3252,7 @@ def render_demo_control_tab():
         
         with bulk_col3:
             if st.button("▶️ Resume All Gold", use_container_width=True):
-                for dt in ["CUSTOMER_360", "PRODUCT_PERFORMANCE", "ORDER_SUMMARY"]:
+                for dt in ["CUSTOMER_360", "PRODUCT_PERFORMANCE_METRICS", "ORDER_SUMMARY", "ML_CUSTOMER_FEATURES", "SUPPORT_METRICS"]:
                     try:
                         run_query(f"ALTER DYNAMIC TABLE DBAONTAP_ANALYTICS.GOLD.{dt} RESUME", fetch=False)
                     except:
@@ -3367,31 +3367,30 @@ def render_knowledge_graph_tab():
                             label = t.replace("_", "\\n", 1) if len(t) > 15 else t
                             dot_lines.append(f'  G_{t} [label="{t}", fillcolor=green2];')
                         dot_lines.append('}')
-                    b2s = {"CUSTOMERS_VARIANT": "CUSTOMERS", "PRODUCTS_VARIANT": "PRODUCTS_VARIANT", "ORDERS_VARIANT": "ORDERS", "ORDER_ITEMS_VARIANT": "ORDER_ITEMS", "SUPPORT_TICKETS_VARIANT": "SUPPORT_TICKETS"}
-                    for bt, st_name in b2s.items():
-                        if bt in bronze_tables and st_name in silver_tables:
-                            dot_lines.append(f'  {bt} -> S_{st_name} [label="transform"];')
-                    s2g_static = [("CUSTOMERS", "CUSTOMER_360", "aggregate"), ("ORDERS", "CUSTOMER_360", "join"), ("SUPPORT_TICKETS", "CUSTOMER_360", "join"),
-                           ("PRODUCTS_VARIANT", "PRODUCT_PERFORMANCE_METRICS", "aggregate"), ("ORDER_ITEMS", "PRODUCT_PERFORMANCE_METRICS", "join"),
-                           ("ORDERS", "ORDER_SUMMARY", "aggregate"), ("CUSTOMERS", "ORDER_SUMMARY", "join"),
-                           ("CUSTOMERS", "ML_CUSTOMER_FEATURES", "features"), ("ORDERS", "ML_CUSTOMER_FEATURES", "features"),
-                           ("SUPPORT_TICKETS", "SUPPORT_METRICS", "aggregate")]
-                    s2g_dynamic = []
+                    lineage_df = run_query("SELECT SOURCE_SCHEMA, SOURCE_TABLE, TARGET_SCHEMA, TARGET_TABLE, EDGE_TYPE, RELATIONSHIP_LABEL FROM DBAONTAP_ANALYTICS.METADATA.TABLE_LINEAGE_MAP")
+                    if lineage_df is not None and len(lineage_df) > 0:
+                        for _, row in lineage_df.iterrows():
+                            src_schema = row['SOURCE_SCHEMA']
+                            src_table = row['SOURCE_TABLE']
+                            tgt_schema = row['TARGET_SCHEMA']
+                            tgt_table = row['TARGET_TABLE']
+                            lbl = row['RELATIONSHIP_LABEL']
+                            if src_schema == 'BRONZE' and tgt_schema == 'SILVER':
+                                if src_table in bronze_tables and tgt_table in silver_tables:
+                                    dot_lines.append(f'  {src_table} -> S_{tgt_table} [label="{lbl}"];')
+                            elif src_schema == 'SILVER' and tgt_schema == 'GOLD':
+                                if src_table in silver_tables and tgt_table in gold_tables_set:
+                                    dot_lines.append(f'  S_{src_table} -> G_{tgt_table} [label="{lbl}"];')
+                    s2g_known = set()
+                    if lineage_df is not None and len(lineage_df) > 0:
+                        s2g_known = set(lineage_df[lineage_df['TARGET_SCHEMA'] == 'GOLD']['TARGET_TABLE'].tolist())
                     for gt in gold_tables_set:
-                        if gt not in {g for _, g, _ in s2g_static}:
+                        if gt not in s2g_known:
                             kg_edges = run_query(f"SELECT REPLACE(SOURCE_NODE_ID, 'TABLE:DBAONTAP_ANALYTICS.SILVER.', '') as SRC FROM DBAONTAP_ANALYTICS.KNOWLEDGE_GRAPH.KG_EDGE WHERE TARGET_NODE_ID = 'TABLE:DBAONTAP_ANALYTICS.GOLD.{gt}' AND SOURCE_NODE_ID LIKE '%SILVER%'")
                             if kg_edges is not None and len(kg_edges) > 0:
                                 for _, r in kg_edges.iterrows():
-                                    s2g_dynamic.append((r['SRC'], gt, 'aggregate'))
-                            else:
-                                for st_name in silver_tables:
-                                    st_root = st_name.rstrip('S')
-                                    if st_root in gt or st_name in gt:
-                                        s2g_dynamic.append((st_name, gt, 'aggregate'))
-                                        break
-                    for s, g, lbl in s2g_static + s2g_dynamic:
-                        if s in silver_tables and g in gold_tables_set:
-                            dot_lines.append(f'  S_{s} -> G_{g} [label="{lbl}"];')
+                                    if r['SRC'] in silver_tables:
+                                        dot_lines.append(f'  S_{r["SRC"]} -> G_{gt} [label="aggregate"];')
                     dot_lines.append('}')
                     st.graphviz_chart('\n'.join(dot_lines), use_container_width=True)
                 
