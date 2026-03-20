@@ -488,23 +488,60 @@ def build_section6(elements, styles):
     elements.append(Paragraph("6. The TABLE_LINEAGE_MAP: Single Source of Truth", styles['SectionTitle']))
     elements.append(HRFlowable(width="100%", thickness=1, color=SF_BLUE, spaceAfter=8))
     elements.append(Paragraph(
-        "At the center of the metadata layer is the TABLE_LINEAGE_MAP \u2014 a single table declaring all intended "
-        "table-to-table relationships. This map serves as the <b>declaration of intent</b> for the entire data pipeline, "
-        "telling the agentic system what Silver tables should exist, what Gold tables should be derived, and which Silver "
-        "tables contribute to each Gold aggregation.",
+        "At the center of the metadata layer is the TABLE_LINEAGE_MAP \u2014 a living registry of all table-to-table "
+        "relationships that is both <b>human-seeded</b> and <b>agent-populated</b>:",
         styles['BodyText2']))
     elements.append(Spacer(1, 4))
 
     lineage = [
-        ["CUSTOMERS_VARIANT", "CUSTOMERS", "TRANSFORMS_TO"],
-        ["ORDERS_VARIANT", "ORDERS", "TRANSFORMS_TO"],
-        ["CUSTOMERS", "CUSTOMER_360", "AGGREGATES_TO"],
-        ["ORDERS", "ORDER_SUMMARY", "AGGREGATES_TO"],
-        ["CUSTOMERS", "ML_CUSTOMER_FEATURES", "AGGREGATES_TO"],
+        ["CUSTOMERS_VARIANT", "CUSTOMERS", "TRANSFORMS_TO", "Seed"],
+        ["ORDERS_VARIANT", "ORDERS", "TRANSFORMS_TO", "Seed"],
+        ["CUSTOMERS", "CUSTOMER_360", "AGGREGATES_TO", "Seed"],
+        ["ORDERS", "ORDER_SUMMARY", "AGGREGATES_TO", "Agent"],
+        ["CUSTOMERS", "ML_CUSTOMER_FEATURES", "AGGREGATES_TO", "Agent"],
     ]
-    t = make_table(["SOURCE_TABLE", "TARGET_TABLE", "RELATIONSHIP_TYPE"], lineage,
-                   [2.0*inch, 2.0*inch, 1.8*inch], styles, first_col_bold=True)
+    t = make_table(["SOURCE_TABLE", "TARGET_TABLE", "RELATIONSHIP_TYPE", "ORIGIN"], lineage,
+                   [1.7*inch, 1.7*inch, 1.5*inch, 0.7*inch], styles, first_col_bold=True)
     elements.append(t)
+    elements.append(Spacer(1, 8))
+
+    elements.append(Paragraph("Dual Population Model", styles['SubsectionTitle']))
+    elements.append(Paragraph(
+        "The lineage map is not a static configuration file \u2014 it is a dynamic registry that grows through two mechanisms:",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+
+    elements.append(Paragraph(
+        "<b>1. Human-Seeded Entries.</b> Data engineers declare known, intentional relationships \u2014 for example, "
+        "that CUSTOMERS_VARIANT should produce a typed CUSTOMERS Silver table, or that CUSTOMERS + ORDERS + "
+        "SUPPORT_TICKETS should feed a CUSTOMER_360 Gold view. These entries express <i>architectural intent</i> "
+        "before any agent executes.",
+        styles['BulletItem']))
+    elements.append(Spacer(1, 2))
+    elements.append(Paragraph(
+        "<b>2. Agent-Populated Entries.</b> When the agentic Gold builder "
+        "(<font face='Courier' size='8'>BUILD_GOLD_FOR_NEW_TABLES</font>) generates and executes a new Gold Dynamic "
+        "Table, the <font face='Courier' size='8'>REGISTER_LINEAGE_FROM_DDL</font> procedure automatically parses the "
+        "generated SQL, extracts all Silver table references from FROM and JOIN clauses, and inserts new lineage entries "
+        "via MERGE. These entries are tagged as auto-registered, creating an audit trail that distinguishes human intent "
+        "from agent discovery.",
+        styles['BulletItem']))
+    elements.append(Spacer(1, 6))
+
+    elements.append(Paragraph(
+        "This dual model means the lineage map starts with a human-defined skeleton and grows organically as agents "
+        "discover new relationships. The agentic build processes consult this map to identify gaps using two strategies: "
+        "(1) Gold targets declared in the map but not yet materialized, and (2) Silver tables with no downstream "
+        "mapping at all \u2014 \"uncovered\" tables that the agents autonomously build Gold aggregations for and then "
+        "register back into the map.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+
+    add_callout(elements,
+        "<b>Self-Expanding Registry:</b> Human architects define the initial vision and autonomous agents fill in the "
+        "details. Every relationship \u2014 whether human-authored or agent-discovered \u2014 is tracked in a single "
+        "source of truth.",
+        styles)
     elements.append(Spacer(1, 10))
 
 

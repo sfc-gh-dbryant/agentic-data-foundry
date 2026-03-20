@@ -234,22 +234,25 @@ The Knowledge Graph serves three critical functions:
 
 ## 6. The TABLE_LINEAGE_MAP: Single Source of Truth
 
-At the center of the Agentic Data Foundry's metadata layer is the `TABLE_LINEAGE_MAP` — a single table that declares all intended table-to-table relationships:
+At the center of the Agentic Data Foundry's metadata layer is the `TABLE_LINEAGE_MAP` — a living registry of all table-to-table relationships that is both **human-seeded** and **agent-populated**:
 
-| SOURCE_TABLE | TARGET_TABLE | RELATIONSHIP_TYPE |
-|-------------|-------------|-------------------|
-| CUSTOMERS_VARIANT | CUSTOMERS | TRANSFORMS_TO |
-| ORDERS_VARIANT | ORDERS | TRANSFORMS_TO |
-| CUSTOMERS | CUSTOMER_360 | AGGREGATES_TO |
-| ORDERS | ORDER_SUMMARY | AGGREGATES_TO |
-| CUSTOMERS | ML_CUSTOMER_FEATURES | AGGREGATES_TO |
+| SOURCE_TABLE | TARGET_TABLE | RELATIONSHIP_TYPE | ORIGIN |
+|-------------|-------------|-------------------|--------|
+| CUSTOMERS_VARIANT | CUSTOMERS | TRANSFORMS_TO | Seed |
+| ORDERS_VARIANT | ORDERS | TRANSFORMS_TO | Seed |
+| CUSTOMERS | CUSTOMER_360 | AGGREGATES_TO | Seed |
+| ORDERS | ORDER_SUMMARY | AGGREGATES_TO | Agent |
+| CUSTOMERS | ML_CUSTOMER_FEATURES | AGGREGATES_TO | Agent |
 
-This map serves as the *declaration of intent* for the entire data pipeline. It tells the agentic system:
-- What Silver tables should exist for each Bronze table
-- What Gold tables should be derived from each Silver table
-- Which Silver tables contribute to each Gold aggregation
+**Dual Population Model.** The lineage map is not a static configuration file — it is a dynamic registry that grows through two mechanisms:
 
-The agentic build processes consult this map to identify gaps — Gold targets that don't yet exist, Silver tables with no downstream mapping — and autonomously fill them.
+1. **Human-Seeded Entries.** Data engineers declare known, intentional relationships — for example, that `CUSTOMERS_VARIANT` should produce a typed `CUSTOMERS` Silver table, or that `CUSTOMERS` + `ORDERS` + `SUPPORT_TICKETS` should feed a `CUSTOMER_360` Gold view. These entries express *architectural intent* before any agent executes.
+
+2. **Agent-Populated Entries.** When the agentic Gold builder (`BUILD_GOLD_FOR_NEW_TABLES`) generates and executes a new Gold Dynamic Table, the `REGISTER_LINEAGE_FROM_DDL` procedure automatically parses the generated SQL, extracts all Silver table references from `FROM` and `JOIN` clauses, and inserts new lineage entries via `MERGE`. These entries are tagged as auto-registered, creating an audit trail that distinguishes human intent from agent discovery.
+
+This dual model means the lineage map starts with a human-defined skeleton and grows organically as agents discover new relationships. The agentic build processes consult this map to identify gaps using two strategies: (1) Gold targets declared in the map but not yet materialized, and (2) Silver tables with no downstream mapping at all — "uncovered" tables that the agents autonomously build Gold aggregations for and then register back into the map.
+
+The result is a self-expanding lineage registry where human architects define the initial vision and autonomous agents fill in the details, with every relationship — whether human-authored or agent-discovered — tracked in a single source of truth.
 
 ---
 
