@@ -411,7 +411,7 @@ def build_section3(elements, styles):
         "This aligns with the broader industry movement toward treating analytics layers as materialized views of intent "
         "rather than independently maintained data stores [8].",
         styles['BodyText2']))
-    elements.append(PageBreak())
+    elements.append(Spacer(1, 16))
 
 
 def build_section4(elements, styles):
