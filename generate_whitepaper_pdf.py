@@ -619,14 +619,72 @@ def build_section10(elements, styles):
     elements.append(Paragraph("10. Challenges and Limitations", styles['SectionTitle']))
     elements.append(HRFlowable(width="100%", thickness=1, color=SF_BLUE, spaceAfter=8))
 
-    challenges = [
-        ["LLM Non-Determinism", "Same Bronze schema may produce different DDL across executions. Schema Contracts mitigate but don't eliminate this."],
-        ["Cost", "LLM inference is more expensive than static SQL. Amortized by caching learnings and reusing patterns."],
-        ["Trust and Auditability", "Full audit trails logged (prompts, responses, DDL, validation). Organizational trust is still developing."],
-        ["Complex Business Logic", "Highly specific rules (fiscal calendars, regulatory compliance) may exceed LLM reliability. Manual overrides supported."],
+    elements.append(Paragraph("LLM Non-Determinism", styles['SubsectionTitle']))
+    elements.append(Paragraph(
+        "The same Bronze schema may produce slightly different Silver DDL across executions. Schema Contracts mitigate "
+        "but do not eliminate this. Future work includes deterministic DDL templates with LLM-powered parameterization.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 6))
+
+    elements.append(Paragraph("Cost: Inference vs. Total Cost of Ownership", styles['SubsectionTitle']))
+    elements.append(Paragraph(
+        "LLM inference for transformation planning is more expensive per-execution than static SQL. The initial "
+        "transformation of a new table incurs meaningful Cortex AI credits, and the system amortizes this through cached "
+        "learnings and pattern reuse. However, evaluating agentic data engineering solely on inference cost misses the "
+        "broader economic picture. The relevant comparison is not <i>LLM inference vs. SQL execution</i> \u2014 it is "
+        "<b>total cost of agentic pipeline ownership vs. total cost of manual pipeline ownership</b>.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 6))
+
+    elements.append(Paragraph(
+        "Traditional pipeline development carries substantial hidden costs that are rarely attributed to the pipeline itself:",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+
+    tco_data = [
+        ["New table onboarding", "Days to weeks of\nengineer time", "Minutes\n(autonomous)"],
+        ["Schema change\nresponse", "Manual investigation,\ncode change, test, deploy", "Automatic regeneration\nfrom metadata"],
+        ["Pipeline maintenance", "40-60% of data\nengineering time [1]", "Near-zero (ephemeral,\nregenerable)"],
+        ["Knowledge transfer", "Tribal knowledge,\nperson-dependent", "Encoded in Learnings,\nContracts, Directives"],
+        ["Quality issue\ndiagnosis", "Reactive debugging after\ndownstream failure", "Proactive validation\nat generation time"],
+        ["Time to production", "Weeks to months per\nnew data product", "Hours to days"],
     ]
-    t = make_table(["Challenge", "Mitigation"], challenges, [1.4*inch, 4.9*inch], styles, first_col_bold=True)
+    t = make_table(["Cost Category", "Traditional (Manual)", "Agentic"], tco_data,
+                   [1.4*inch, 2.3*inch, 2.3*inch], styles, first_col_bold=True)
     elements.append(t)
+    elements.append(Spacer(1, 8))
+
+    elements.append(Paragraph(
+        "Industry data supports the economic case for AI-driven automation. IDC reports an average ROI of <b>3.7\u00d7 per "
+        "dollar invested</b> in generative AI projects, with top-performing organizations achieving up to 10.3\u00d7 [11]. "
+        "Deloitte's 2026 State of AI survey found that <b>66% of enterprises report measurable productivity gains</b> "
+        "from AI adoption, with an average 21% productivity improvement and 15% cost reduction [12]. NVIDIA's 2026 State "
+        "of AI report \u2014 surveying 3,200+ enterprises \u2014 found that <b>88% reported AI increased annual revenue</b> "
+        "and 87% reported AI reduced annual costs, with 53% citing improved employee productivity as the single biggest "
+        "operational impact [13].",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 6))
+
+    add_callout(elements,
+        "<b>The Compounding Advantage:</b> Each manually maintained pipeline carries a compounding maintenance "
+        "burden \u2014 schema drift, quality regression, documentation decay. Agentic pipelines, regenerated from "
+        "metadata, carry a fixed cost per regeneration and zero ongoing maintenance cost. The economic advantage "
+        "grows with every pipeline added.",
+        styles)
+    elements.append(Spacer(1, 8))
+
+    elements.append(Paragraph("Trust and Auditability", styles['SubsectionTitle']))
+    elements.append(Paragraph(
+        "Production data teams require full audit trails. The system logs every LLM prompt, response, generated DDL, "
+        "and validation result \u2014 but organizational trust in AI-generated transformations is still developing.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 6))
+
+    elements.append(Paragraph("Complex Business Logic", styles['SubsectionTitle']))
+    elements.append(Paragraph(
+        "Highly specific business rules (e.g., fiscal calendar calculations, regulatory compliance) may exceed what an "
+        "LLM can reliably generate from a natural language directive. The system supports manual overrides for these cases.",
+        styles['BodyText2']))
     elements.append(Spacer(1, 10))
 
 
@@ -667,6 +725,9 @@ def build_references(elements, styles):
         '[8] InfoQ, "The End of the Bronze Age: Rethinking the Medallion Architecture," 2025. infoq.com',
         '[9] Data Engineering Academy, "The Future of Data Engineering in an AI-Driven World," 2025. dataengineeracademy.com',
         '[10] M. Minevich, "Agentic AI Takes Over \u2014 11 Shocking 2026 Predictions," Forbes, Dec 2025. forbes.com',
+        '[11] IDC, "Business Opportunity of AI: GenAI Delivering New Business Value and Increasing ROI," 2025. idc.com',
+        '[12] Deloitte, "The State of AI in the Enterprise," Deloitte AI Institute, 2026. deloitte.com',
+        '[13] NVIDIA, "State of AI Report 2026: How AI Is Driving Revenue, Cutting Costs and Boosting Productivity," Mar 2026. blogs.nvidia.com',
     ]
     for ref in refs:
         elements.append(Paragraph(ref, styles['RefText']))

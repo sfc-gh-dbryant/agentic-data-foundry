@@ -330,7 +330,22 @@ In the Agentic Data Foundry, the primary deliverable of human work is *metadata*
 
 **LLM Non-Determinism.** The same Bronze schema may produce slightly different Silver DDL across executions. Schema Contracts mitigate but do not eliminate this. Future work includes deterministic DDL templates with LLM-powered parameterization.
 
-**Cost.** LLM inference for transformation planning is more expensive than static SQL execution. The system amortizes this cost by caching learnings and reusing patterns, but the initial transformation of a new table incurs meaningful Cortex AI credits.
+**Cost: Inference vs. Total Cost of Ownership.** LLM inference for transformation planning is more expensive per-execution than static SQL. The initial transformation of a new table incurs meaningful Cortex AI credits, and the system amortizes this through cached learnings and pattern reuse. However, evaluating agentic data engineering solely on inference cost misses the broader economic picture. The relevant comparison is not *LLM inference vs. SQL execution* — it is *total cost of agentic pipeline ownership vs. total cost of manual pipeline ownership*.
+
+Traditional pipeline development carries substantial hidden costs that are rarely attributed to the pipeline itself:
+
+| Cost Category | Traditional (Manual) | Agentic |
+|---|---|---|
+| New table onboarding | Days to weeks of engineer time | Minutes (autonomous) |
+| Schema change response | Manual investigation, code change, test, deploy | Automatic regeneration from metadata |
+| Pipeline maintenance | 40-60% of data engineering time [1] | Near-zero (ephemeral, regenerable) |
+| Knowledge transfer | Tribal knowledge, person-dependent | Encoded in Learnings, Contracts, Directives |
+| Quality issue diagnosis | Reactive debugging after downstream failure | Proactive validation at generation time |
+| Time to production | Weeks to months per new data product | Hours to days |
+
+Industry data supports the economic case for AI-driven automation. IDC reports an average ROI of 3.7× per dollar invested in generative AI projects, with top-performing organizations achieving up to 10.3× [11]. Deloitte's 2026 State of AI survey found that 66% of enterprises report measurable productivity gains from AI adoption, with an average 21% productivity improvement and 15% cost reduction [12]. NVIDIA's 2026 State of AI report — surveying 3,200+ enterprises — found that 88% reported AI increased annual revenue and 87% reported AI reduced annual costs, with 53% citing improved employee productivity as the single biggest operational impact [13].
+
+For data engineering specifically, the cost calculus shifts further in favor of agentic approaches as pipeline count grows. Each manually maintained pipeline carries a compounding maintenance burden — schema drift, quality regression, documentation decay. Agentic pipelines, regenerated from metadata, carry a fixed cost per regeneration and zero ongoing maintenance cost.
 
 **Trust and Auditability.** Production data teams require full audit trails. The system logs every LLM prompt, response, generated DDL, and validation result — but organizational trust in AI-generated transformations is still developing.
 
@@ -376,6 +391,12 @@ The data engineer's role evolves from builder to describer, from coder to curato
 [9] Data Engineering Academy, "The Future of Data Engineering in an AI-Driven World," 2025. Available: https://dataengineeracademy.com/blog/the-future-of-data-engineering-in-an-ai-driven-world/
 
 [10] M. Minevich, "Agentic AI Takes Over — 11 Shocking 2026 Predictions," Forbes, December 2025. Available: https://www.forbes.com/sites/markminevich/2025/12/31/agentic-ai-takes-over-11-shocking-2026-predictions/
+
+[11] IDC, "Business Opportunity of AI: Generative AI Delivering New Business Value and Increasing ROI," IDC InfoBrief, 2025. Available: https://www.idc.com
+
+[12] Deloitte, "The State of AI in the Enterprise," Deloitte AI Institute, 2026. Available: https://www.deloitte.com/us/en/what-we-do/capabilities/applied-artificial-intelligence/content/state-of-ai-in-the-enterprise.html
+
+[13] NVIDIA, "State of AI Report 2026: How AI Is Driving Revenue, Cutting Costs and Boosting Productivity," NVIDIA Blog, March 2026. Available: https://blogs.nvidia.com/blog/state-of-ai-report-2026/
 
 ---
 
