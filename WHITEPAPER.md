@@ -8,13 +8,21 @@
 
 ## Abstract
 
-The data engineering discipline stands at an inflection point. For two decades, data engineers have hand-coded ETL scripts, manually mapped schemas, and reactively debugged pipeline failures. The Agentic Data Foundry represents a paradigm shift: a system where AI agents autonomously discover, transform, validate, and optimize data pipelines while human practitioners evolve from pipeline builders to pipeline *describers*. This whitepaper presents the architecture, principles, and working implementation of an agentic data engineering platform built on Snowflake, demonstrating how large language models (LLMs), declarative metadata, and autonomous workflows can replace imperative pipeline code with intent-driven data engineering.
+The data engineering discipline is hitting a wall. For two decades, we've tricked ourselves into thinking that hand-coding ETL scripts and manually mapping schemas was "engineering." In reality, it was just expensive plumbing. As we enter the era of the Agentic Enterprise, this manual approach isn't just slow — it's a systemic liability.
+
+Snowflake has provided the world's most powerful engine with Cortex AI and Project SnowWork, but these tools are only as effective as the data they consume. If your "Back-of-House" data supply chain is still a web of brittle, human-dependent pipes, your AI agents will inevitably fail.
+
+The Agentic Data Foundry is the missing architectural layer. It represents a fundamental shift from **Building** to **Describing**. By leveraging Snowflake's native capabilities — Openflow for ingestion, Dynamic Tables for orchestration, and Cortex for reasoning — we have built a system that autonomously discovers, transforms, and validates data. In this paradigm, the data engineer doesn't write code; they **curate intent**. This is the blueprint for an autonomous data lifecycle that moves at the speed of business thought, ensuring that Snowflake is the central **System of Action** for the modern enterprise.
 
 ---
 
-## 1. Introduction: The Case for Change
+## 1. Introduction: The Case for Change — Escaping the Maintenance Trap
 
-Modern data teams spend an estimated 40-60% of their time on pipeline maintenance rather than value creation [1]. Schema changes break downstream transformations. New data sources require weeks of manual onboarding. Quality issues propagate silently through layers until they surface in executive dashboards. The medallion architecture (Bronze → Silver → Gold) provided a useful organizational pattern, but the *implementation* of that pattern remains overwhelmingly manual.
+Every modern data leader is currently paying a "plumbing tax" that is bankrupting their roadmap. We've spent two decades perfecting progressive refinement — staging data through capture, conformance, and consumption layers — yet we're still stuck in a cycle of manual labor: a source DB changes a column name, a pipeline breaks, an executive sees a blank dashboard, and an engineer spends Friday night debugging SQL.
+
+We don't have a data problem; we have a **coordination problem**. Project SnowWork and the era of "Agentic Enterprises" promise a world where business users just "ask and get." But if your underlying data infrastructure still relies on hand-coded brittle pipes, those agents are just going to hallucinate at scale. The Agentic Data Foundry isn't just a new tool; it's the mandatory "back-of-house" engine that makes the agentic future possible. We are moving the engineer from the engine room to the bridge, where they don't turn the gears — they set the course.
+
+Modern data teams spend an estimated 40-60% of their time on pipeline maintenance rather than value creation [1]. Schema changes break downstream transformations. New data sources require weeks of manual onboarding. Quality issues propagate silently through layers until they surface in executive dashboards. The progressive refinement pattern (Bronze → Silver → Gold) provided a useful organizational model, but the *implementation* of that pattern remains overwhelmingly manual.
 
 Meanwhile, the AI landscape has shifted dramatically. Gartner predicts that 40% of enterprise applications will feature task-specific AI agents by 2026, up from less than 5% in 2025 [2]. McKinsey's research on agentic AI identifies autonomous task completion as a defining capability of the next wave of enterprise AI adoption [3]. Snowflake's own platform evolution — with Cortex AI, Dynamic Tables, and Cortex Agents — has created the infrastructure for AI-native data engineering [4].
 
@@ -117,43 +125,81 @@ This pattern — storing raw data as schema-on-read VARIANT — provides a criti
 - Semantic similarity search to find analogous tables for pattern reuse
 - Automatic classification of data sensitivity and business domain
 
-### 3.3 The Silver Layer: Agentic Transformation
+### 3.4 The Silver Layer: Agentic Transformation
 
-The Silver layer is where the agentic paradigm most visibly departs from traditional data engineering. Rather than human-authored transformation scripts, Silver tables are generated by an autonomous 5-phase workflow.
+The Silver layer is where the agentic paradigm most visibly departs from traditional data engineering. Rather than human-authored transformation scripts, Silver tables are generated by an autonomous 5-phase workflow. Each phase is a distinct agent responsibility with defined inputs, outputs, and failure modes.
 
-**Phase 1: Trigger.** The system detects events requiring transformation:
-- A new Bronze table with no corresponding Silver table
-- A schema change (new or dropped columns in the Bronze payload)
-- A data quality threshold breach (>5% row count variance)
+#### 3.4.1 Phase 1: The Trigger — Event-Driven Activation
 
-**Phase 2: Planner.** An LLM (Claude 3.5 Sonnet) analyzes the Bronze schema structure and determines the optimal transformation strategy. The planner considers:
-- Column types and naming conventions
-- CDC deduplication requirements
-- Whether similar tables have been transformed before (via Knowledge Graph)
-- Active Schema Contracts and Directives for the table
-- Historical Learnings from previous transformations
+The Trigger is the system's nervous system. It doesn't poll on a schedule — it *reacts* to structural events in the data platform. Three event classes activate the agentic workflow:
 
-**Phase 3: Executor.** The LLM generates a complete `CREATE OR REPLACE DYNAMIC TABLE` DDL statement. The generated SQL includes CDC-aware deduplication using `ROW_NUMBER()` partitioned by primary key and ordered by `_SNOWFLAKE_UPDATED_AT`. If the DDL fails compilation, the Executor captures the error and retries with the error context injected into the LLM prompt — a self-correction loop with up to 3 attempts.
+1. **New Table Detection.** When `DISCOVER_AND_ONBOARD_NEW_TABLES` finds a landing table with no corresponding Bronze DT, it creates the Bronze infrastructure and fires a Stream. The Stream's `SYSTEM$STREAM_HAS_DATA()` check activates `AGENTIC_WORKFLOW_TRIGGER_TASK`, which scans for Bronze tables lacking Silver counterparts.
 
-**Phase 4: Validator.** The system performs multi-layer validation that goes beyond simple row counts:
+2. **Schema Drift Detection.** The system compares the current Bronze VARIANT payload keys against the last-known schema snapshot stored in metadata. New keys trigger a re-planning cycle; dropped keys trigger a downstream impact assessment via the Knowledge Graph before any action is taken.
 
-- **Row Count Comparison** (must be within ±5% tolerance of source)
-- **Schema Contract Enforcement** — all contract-required columns present with correct types
-- **Statistical Profiling** — null rates, distinct counts, and value distributions are compared against source columns. A Silver column with 40% nulls when the Bronze source has 0% triggers an investigation
-- **Referential Integrity** — foreign key columns are checked against parent tables (e.g., `CUSTOMER_ID` in ORDERS must exist in CUSTOMERS)
-- **Data Type Verification** — ensures LLM-chosen casts don't silently truncate (e.g., `VARCHAR(10)` for an email field)
-- **Semantic Assertions** — domain-specific checks: monetary values are non-negative, dates are not in the future, email formats match regex patterns. These are generated by the LLM based on column semantics and accumulated Learnings
+3. **Quality Threshold Breach.** If a scheduled validation detects that an existing Silver table has drifted beyond acceptable tolerances (>5% row count variance, null rate spike, or distribution anomaly), the Trigger initiates a regeneration cycle rather than patching the existing table.
 
-Validation failures do not simply reject the output — they feed back into the Executor for self-correction, creating an iterative refinement loop.
+The Trigger's output is a *work order* — a JSON payload containing the Bronze table name, the detected event type, the current schema snapshot, and any relevant downstream dependencies. This work order is the Planner's input.
 
-**Phase 5: Reflector.** An LLM analyzes the complete workflow execution and extracts learnings:
-- Success patterns ("Tables with temporal data benefit from `ORDER_MONTH` derivation")
-- Failure patterns ("Nested VARIANT arrays require `LATERAL FLATTEN` before extraction")
-- Optimization recommendations ("Consider clustering on `CUSTOMER_ID` for join performance")
+#### 3.4.2 Phase 2: The Planner — Context Assembly and Strategy
 
-These learnings are persisted with confidence scores and fed back into future Planner prompts, creating a continuously improving system.
+The Planner is the most LLM-intensive phase and the one where the system's intelligence is most visible. Its job is not to write SQL — it is to *decide what SQL should be written*. The Planner assembles a rich context window from four sources:
 
-### 3.4 The Gold Layer: Agentic Aggregation
+1. **Schema Context.** The Bronze table's VARIANT keys, inferred types, sample values, and cardinality estimates. For a `CUSTOMERS_VARIANT` table, this includes the knowledge that `CUSTOMER_ID` is an integer primary key, `EMAIL` contains valid email addresses, and `_SNOWFLAKE_UPDATED_AT` is the CDC timestamp.
+
+2. **Contract and Directive Context.** Any active Schema Contract for the target Silver table (column names, types, required flags) and any matching Transformation Directives (business intent like "churn prediction: compute RFM features"). The contract constrains the output shape; the directive guides the transformation logic.
+
+3. **Knowledge Graph Context.** Vector similarity search finds analogous tables that have been successfully transformed before. If `INVOICES_VARIANT` arrives and `ORDERS_VARIANT` was previously transformed with a specific CDC dedup pattern, that pattern is surfaced as a candidate strategy. The KG also provides downstream dependency information — who consumes the Silver table and what they expect.
+
+4. **Learnings Context.** All active learnings matching the table's pattern signature are injected. This includes both positive patterns ("CDC tables with `_SNOWFLAKE_UPDATED_AT` require `ROW_NUMBER()` dedup") and negative patterns ("Window functions on SUPPORT_TICKETS cause timeout due to partition skew").
+
+The Planner's output is a *transformation strategy* — not SQL, but a structured plan: "Use ROW_NUMBER() dedup on `_SNOWFLAKE_UPDATED_AT`, extract and type-cast these 12 columns, derive `RECENCY_DAYS` from `LAST_ORDER_DATE`, apply the churn prediction directive by computing RFM features." This strategy document is the Executor's input.
+
+#### 3.4.3 Phase 3: The Executor — SQL Generation with Self-Correction
+
+The Executor is where strategy becomes DDL. The LLM (Claude 3.5 Sonnet) takes the Planner's strategy and generates a complete `CREATE OR REPLACE DYNAMIC TABLE` statement with:
+
+- CDC-aware deduplication using `ROW_NUMBER() OVER (PARTITION BY primary_key ORDER BY _SNOWFLAKE_UPDATED_AT DESC)`
+- Type-safe column extraction from the VARIANT payload (`SRC:customer_id::INTEGER`)
+- Derived columns specified by the Transformation Directive
+- `TARGET_LAG` set to `'1 minute'` for near-real-time refresh
+- Soft-delete filtering (`WHERE _SNOWFLAKE_DELETED = FALSE`)
+
+**The Self-Correction Loop.** If the generated DDL fails compilation, the Executor doesn't give up — it learns from the error. The Snowflake error message is injected back into the LLM prompt alongside the failed DDL: *"Your DDL failed with: 'SQL compilation error: invalid identifier SRC:full_name'. The VARIANT payload contains 'first_name' and 'last_name' but not 'full_name'. Fix the DDL."* The system retries up to 3 times, with each attempt receiving the accumulated error context from all previous failures.
+
+For Gold-layer DDL, the Executor additionally runs through the `VALIDATE_GOLD_DDL` procedure, which parses FROM/JOIN references and verifies each table exists in `INFORMATION_SCHEMA` — catching the 15-20% of first-attempt DDLs where the LLM hallucinates a table name.
+
+#### 3.4.4 Phase 4: The Validator — Deterministic Trust Boundary
+
+This is the phase that separates a toy demo from a production system. The Validator is the hard boundary between AI-generated optimism and production reality. We treat every agent-generated SQL statement as **guilty until proven innocent**.
+
+The Validator isn't an AI "vibe check." It is a battery of deterministic, hard-coded guardrails:
+
+1. **Row Count Parity.** The Silver table's row count must be within ±5% of the source Bronze count (after dedup). A 10% delta means something was silently dropped or duplicated — the DDL is rejected.
+
+2. **Schema Contract Enforcement.** Every column declared in the Schema Contract must be present with the correct data type. If the contract says `CUSTOMER_ID INTEGER` and the DDL produced `CUSTOMER_ID VARCHAR`, that's a failure — regardless of whether the data "looks fine."
+
+3. **Statistical Profiling.** Null rates, distinct counts, and value distributions are compared column-by-column against the Bronze source. A Silver column with 40% nulls when the Bronze source has 0% triggers an investigation — either the type cast is wrong or the dedup logic is filtering incorrectly.
+
+4. **Referential Integrity.** Foreign key columns are checked against parent tables. `CUSTOMER_ID` in ORDERS must exist in CUSTOMERS. Orphaned references indicate a join or filter error in the generated DDL.
+
+5. **Semantic Assertions.** The LLM generates domain-specific checks based on column semantics and accumulated Learnings: monetary values are non-negative, dates are not in the future, email formats match regex patterns, status fields contain only valid enum values.
+
+If a generated pipeline fails any of these checks, it is **rejected before it ever touches production**. We don't ask the AI to be "perfect"; we build a system that makes it impossible for the AI to be "wrong" in a way that affects the business. Validation failures feed back into the Executor's self-correction loop with specific diagnostic information.
+
+#### 3.4.5 Phase 5: The Reflector — Institutional Memory
+
+The Reflector is what transforms the Agentic Data Foundry from a stateless LLM wrapper into a system that *gets smarter over time*. After every workflow execution — whether successful or failed — an LLM analyzes the complete execution trace and extracts three categories of learning:
+
+1. **Success Patterns.** "Tables with temporal data benefit from `ORDER_MONTH` derivation." "CDC tables with compound primary keys require multi-column `PARTITION BY`." These positive patterns seed future Planner prompts, improving first-attempt accuracy.
+
+2. **Failure Patterns (Negative Learnings).** "Nested VARIANT arrays require `LATERAL FLATTEN` before extraction — direct path access returns NULL." "`LEAD()`/`LAG()` on `SUPPORT_TICKETS` causes timeout due to partition skew." These anti-patterns prevent the Planner from repeating expensive mistakes.
+
+3. **Optimization Recommendations.** "Consider clustering on `CUSTOMER_ID` for join performance." "Pre-aggregate by date before applying window functions on high-cardinality tables." These improve query performance without changing correctness.
+
+Each learning is persisted with a confidence score (increases with repeated observation), a pattern signature (hash for matching against future scenarios), and an active/inactive flag (humans can override incorrect learnings). The Reflector phase generates learnings; the Planner phase consumes them — creating a feedback loop where the system improves with every execution. When a senior engineer corrects an agent's join logic, that "scar tissue" is saved forever in the customer's Snowflake metadata.
+
+### 3.5 The Gold Layer: Agentic Aggregation
 
 The Gold layer extends the agentic pattern to business-ready aggregations. The `BUILD_GOLD_FOR_NEW_TABLES` procedure employs a two-strategy discovery approach:
 
@@ -163,7 +209,7 @@ The Gold layer extends the agentic pattern to business-ready aggregations. The `
 
 In both cases, the generated Gold Dynamic Tables are validated, their lineage is registered, and the Knowledge Graph is refreshed — all autonomously.
 
-### 3.5 The Ephemeral Nature of Silver and Gold
+### 3.6 The Ephemeral Nature of Silver and Gold
 
 A defining property of the Agentic Data Foundry is that Silver and Gold layers are *ephemeral* — they are derived, not primary. Because every Silver and Gold table is:
 
@@ -178,7 +224,7 @@ A defining property of the Agentic Data Foundry is that Silver and Gold layers a
 - **Disaster recovery simplifies**: Bronze + metadata = complete system reconstruction
 - **Technical debt cannot accumulate**: There is no legacy transformation code to maintain
 
-This aligns with the broader industry movement toward treating analytics layers as *materialized views of intent* rather than independently maintained data stores. As InfoQ noted in their analysis of medallion architecture evolution, "The future of the medallion pattern lies in making intermediate layers regenerable rather than permanent" [8].
+This aligns with the broader industry movement toward treating analytics layers as *materialized views of intent* rather than independently maintained data stores. As InfoQ noted in their analysis of progressive refinement evolution, "The future of the layered pattern lies in making intermediate layers regenerable rather than permanent" [8].
 
 ---
 
@@ -398,9 +444,18 @@ In the Agentic Data Foundry, the primary deliverable of human work is *metadata*
 
 ## 10. Challenges and Limitations
 
-**LLM Non-Determinism.** The same Bronze schema may produce slightly different Silver DDL across executions. Schema Contracts mitigate but do not eliminate this. Future work includes deterministic DDL templates with LLM-powered parameterization.
+### 10.1 LLM Non-Determinism
 
-**Cost: Inference vs. Total Cost of Ownership.** LLM inference for transformation planning is more expensive per-execution than static SQL. The initial transformation of a new table incurs meaningful Cortex AI credits, and the system amortizes this through cached learnings and pattern reuse. However, evaluating agentic data engineering solely on inference cost misses the broader economic picture. The relevant comparison is not *LLM inference vs. SQL execution* — it is *total cost of agentic pipeline ownership vs. total cost of manual pipeline ownership*.
+The same Bronze schema may produce slightly different Silver DDL across executions. Schema Contracts mitigate but do not eliminate this. Future work includes deterministic DDL templates with LLM-powered parameterization.
+
+### 10.2 Cost: Human Latency for Instant Consumption
+
+The most frequent objection to agentic workflows is the cost of LLM inference. Critics point to the Snowflake credits consumed by Cortex AI during the planning and validation phases.
+
+**The Human Reality:** We are no longer trading SQL credits for LLM credits; we are trading **Human Latency** for **Instant Consumption**.
+
+- The real cost in a modern enterprise isn't the $2.00 in compute to map a schema; it's the $20,000 in engineering salary wasted on "tribal knowledge" while a data product sits in a 6-week JIRA queue.
+- By using **Ephemeral Derived Layers**, we actually reduce long-term TCO by eliminating the "storage tax" on unused, stagnant data. We only pay for the data the business actually needs, exactly when they need it.
 
 Traditional pipeline development carries substantial hidden costs that are rarely attributed to the pipeline itself:
 
@@ -415,15 +470,53 @@ Traditional pipeline development carries substantial hidden costs that are rarel
 
 Industry data supports the economic case for AI-driven automation. IDC reports an average ROI of 3.7× per dollar invested in generative AI projects, with top-performing organizations achieving up to 10.3× [11]. Deloitte's 2026 State of AI survey found that 66% of enterprises report measurable productivity gains from AI adoption, with an average 21% productivity improvement and 15% cost reduction [12]. NVIDIA's 2026 State of AI report — surveying 3,200+ enterprises — found that 88% reported AI increased annual revenue and 87% reported AI reduced annual costs, with 53% citing improved employee productivity as the single biggest operational impact [13].
 
-For data engineering specifically, the cost calculus shifts further in favor of agentic approaches as pipeline count grows. Each manually maintained pipeline carries a compounding maintenance burden — schema drift, quality regression, documentation decay. Agentic pipelines, regenerated from metadata, carry a fixed cost per regeneration and zero ongoing maintenance cost.
+For data engineering specifically, the cost calculus shifts further in favor of agentic approaches as pipeline count grows. Each manually maintained pipeline carries a compounding maintenance burden — schema drift, quality regression, documentation decay. Agentic pipelines, regenerated from metadata, carry a fixed cost per regeneration and zero ongoing maintenance cost. The economic advantage grows with every pipeline added.
 
-**Trust and Auditability.** Production data teams require full audit trails. The system logs every LLM prompt, response, generated DDL, and validation result — but organizational trust in AI-generated transformations is still developing.
+### 10.3 Beyond Hallucinations: The Zero-Trust Model
 
-**Complex Business Logic.** Highly specific business rules (e.g., fiscal calendar calculations, regulatory compliance transformations) may exceed what an LLM can reliably generate from a natural language directive. The system supports manual overrides for these cases.
+The fear of "AI-generated garbage" is valid if you treat an LLM as a black box. The Foundry does the opposite.
+
+**The Human Reality:** We treat every agent-generated SQL statement as **guilty until proven innocent**.
+
+- Our **Validator Phase** isn't an AI "vibe check." It is a battery of deterministic, hard-coded guardrails.
+- If a generated pipeline fails a row-count parity test or violates a null-check constraint, it is rejected before it ever touches production. We don't ask the AI to be "perfect"; we build a system that makes it impossible for the AI to be "wrong" in a way that affects the business.
+
+The three-layer hallucination guardrail pipeline (Syntactic Compilation → Semantic Reference Check → Column Verification) catches the vast majority of hallucinated SQL before execution. The remaining edge cases are caught by the Validator's deterministic checks. Trust is not assumed — it is earned through verifiable evidence at every step.
+
+### 10.4 The "Scar Tissue" Moat
+
+Finally, there is the concern of "Platform Dependency."
+
+**The Human Reality:** By using the **Learnings Registry**, we are turning ephemeral engineering efforts into **Institutional Memory**.
+
+- When a senior engineer corrects an agent's join logic, that "scar tissue" is saved forever in the customer's Snowflake metadata.
+- This creates a defensive moat that a generic, off-the-shelf LLM can never replicate. Your Snowflake account literally becomes "smarter" the more you use it, making the Foundry the central brain of your data operations.
+
+### 10.5 Trust and Auditability
+
+Production data teams don't adopt tools on faith — they adopt tools they can audit. The Agentic Data Foundry treats auditability as a first-class architectural concern, not an afterthought.
+
+Every LLM interaction is logged to `METADATA.TRANSFORMATION_LOG` with full provenance: the prompt sent, the model used, the raw response, the generated DDL, the validation result, and the final execution outcome — all tied to a unique execution ID and timestamp. This means a compliance officer can trace any Gold table column back through the exact LLM reasoning chain that produced it, the directive that guided it, and the contract that constrained it.
+
+The system also supports a `dry_run` mode where the entire agentic workflow executes — Trigger through Reflector — but no DDL is materialized. The generated SQL is logged, validated, and available for human review in the Streamlit interface before a single table is touched. This is not a "trust me" system; it's a "show your work" system.
+
+That said, organizational trust in AI-generated transformations is still developing. Early adopters report a predictable trust curve: initial skepticism, followed by cautious adoption with heavy dry-run usage, followed by growing confidence as the audit trail demonstrates consistent accuracy. The Foundry is designed to meet teams wherever they are on that curve.
+
+### 10.6 Complex Business Logic
+
+Not everything belongs in an LLM prompt. Fiscal calendar calculations that follow a 4-4-5 retail pattern, regulatory compliance transformations governed by HIPAA or SOX, multi-entity consolidation rules with intercompany elimination — these are domains where precision is non-negotiable and the cost of a subtle error is catastrophic.
+
+The Agentic Data Foundry handles this through a deliberate escape hatch: **manual overrides**. A data engineer can define a Schema Contract and Transformation Directive that says, in effect, "for this table, use this exact DDL" — bypassing the LLM entirely while still benefiting from the Trigger, Validator, and Reflector phases. The override DDL is version-controlled in metadata, validated by the same deterministic guardrails, and tracked in the same audit trail.
+
+This hybrid model is intentional. The goal is not to replace every SQL statement with an LLM call — it's to eliminate the 80% of pipeline work that is repetitive, pattern-based, and mechanical, freeing engineers to focus on the 20% that genuinely requires domain expertise. The boundary between "agentic" and "manual" is a configuration choice, not an architectural limitation.
 
 ---
 
-## 11. Conclusion
+## 11. Conclusion: Bridging the \"Context Gap\"
+
+Data engineering as we know it \u2014 the era of the \"manual plumber\" \u2014 is over. It has to be. You cannot scale an Agentic Enterprise one SQL script at a time. The Agentic Data Foundry demonstrates that the transition from imperative to declarative engineering is not only possible but practical.
+
+By combining AI-activated discovery, agentic transformation, and a Knowledge Graph that captures \"institutional memory,\" we've created a system where the gap between \"data arrives\" and \"insight is actionable\" is bridged by autonomous agents guided by human intent.
 
 The Agentic Data Foundry demonstrates that the transition from imperative to declarative data engineering is not only possible but practical. By combining:
 
@@ -450,7 +543,7 @@ The Agentic Data Foundry occupies a specific and critical position in this lands
 
 The Foundry produces the governed semantic layer that Project SnowWork then consumes for business end-users. Without the Foundry, SnowWork operates on manually curated Gold tables — recreating the same bottleneck that agentic engineering was designed to eliminate. With the Foundry, the entire path from raw CDC event to business user insight is autonomous: agents build the data, agents serve the data, and humans govern at both ends through intent rather than code.
 
-Together, they represent the full arc of the agentic enterprise — from data creation to data consumption, from pipeline to insight to action, all governed by intent rather than code.
+The Agentic Enterprise isn't a future state; with the Foundry on Snowflake, it's the current reality. **Let's stop building pipes and start describing the future.**
 
 ---
 

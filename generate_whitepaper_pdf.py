@@ -213,26 +213,52 @@ def build_abstract(elements, styles):
     elements.append(Paragraph("Abstract", styles['SectionTitle']))
     elements.append(HRFlowable(width="100%", thickness=1, color=SF_BLUE, spaceAfter=8))
     elements.append(Paragraph(
-        "The data engineering discipline stands at an inflection point. For two decades, data engineers have hand-coded "
-        "ETL scripts, manually mapped schemas, and reactively debugged pipeline failures. The Agentic Data Foundry "
-        "represents a paradigm shift: a system where AI agents autonomously discover, transform, validate, and optimize "
-        "data pipelines while human practitioners evolve from pipeline builders to pipeline <i>describers</i>. This "
-        "whitepaper presents the architecture, principles, and working implementation of an agentic data engineering "
-        "platform built on Snowflake, demonstrating how large language models (LLMs), declarative metadata, and autonomous "
-        "workflows can replace imperative pipeline code with intent-driven data engineering.",
+        "The data engineering discipline is hitting a wall. For two decades, we've tricked ourselves into thinking that "
+        "hand-coding ETL scripts and manually mapping schemas was \"engineering.\" In reality, it was just expensive plumbing. "
+        "As we enter the era of the Agentic Enterprise, this manual approach isn't just slow \u2014 it's a systemic liability.",
+        styles['AbstractText']))
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "Snowflake has provided the world's most powerful engine with <b>Cortex AI</b> and <b>Project SnowWork</b>, but "
+        "these tools are only as effective as the data they consume. If your \"Back-of-House\" data supply chain is still a "
+        "web of brittle, human-dependent pipes, your AI agents will inevitably fail.",
+        styles['AbstractText']))
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "The <b>Agentic Data Foundry</b> is the missing architectural layer. It represents a fundamental shift from "
+        "<b>Building</b> to <b>Describing</b>. By leveraging Snowflake's native capabilities \u2014 Openflow for ingestion, "
+        "Dynamic Tables for orchestration, and Cortex for reasoning \u2014 we have built a system that autonomously discovers, "
+        "transforms, and validates data. In this paradigm, the data engineer doesn't write code; they <b>curate intent</b>. "
+        "This is the blueprint for an autonomous data lifecycle that moves at the speed of business thought, ensuring that "
+        "Snowflake is the central <b>System of Action</b> for the modern enterprise.",
         styles['AbstractText']))
     elements.append(Spacer(1, 12))
 
 
 def build_section1(elements, styles):
-    elements.append(Paragraph("1. Introduction: The Case for Change", styles['SectionTitle']))
+    elements.append(Paragraph("1. Introduction: The Case for Change \u2014 Escaping the Maintenance Trap", styles['SectionTitle']))
     elements.append(HRFlowable(width="100%", thickness=1, color=SF_BLUE, spaceAfter=8))
+    elements.append(Paragraph(
+        "Every modern data leader is currently paying a \"plumbing tax\" that is bankrupting their roadmap. We've spent "
+        "two decades perfecting progressive refinement \u2014 staging data through capture, conformance, and consumption "
+        "layers \u2014 yet we're still stuck in a cycle of manual labor: a source DB changes a column name, a pipeline "
+        "breaks, an executive sees a blank dashboard, and an engineer spends Friday night debugging SQL.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "We don't have a data problem; we have a <b>coordination problem</b>. Project SnowWork and the era of \"Agentic "
+        "Enterprises\" promise a world where business users just \"ask and get.\" But if your underlying data infrastructure "
+        "still relies on hand-coded brittle pipes, those agents are just going to hallucinate at scale. The Agentic Data "
+        "Foundry isn't just a new tool; it's the mandatory \"back-of-house\" engine that makes the agentic future possible. "
+        "We are moving the engineer from the engine room to the bridge, where they don't turn the gears \u2014 they set the course.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
     elements.append(Paragraph(
         "Modern data teams spend an estimated 40-60% of their time on pipeline maintenance rather than value creation [1]. "
         "Schema changes break downstream transformations. New data sources require weeks of manual onboarding. Quality "
-        "issues propagate silently through layers until they surface in executive dashboards. The medallion architecture "
-        "(Bronze \u2192 Silver \u2192 Gold) provided a useful organizational pattern, but the <i>implementation</i> of that pattern "
-        "remains overwhelmingly manual.",
+        "issues propagate silently through layers until they surface in executive dashboards. The progressive refinement "
+        "pattern (Bronze \u2192 Silver \u2192 Gold) provided a useful organizational model, but the <i>implementation</i> of that "
+        "pattern remains overwhelmingly manual.",
         styles['BodyText2']))
     elements.append(Spacer(1, 4))
     elements.append(Paragraph(
@@ -397,28 +423,126 @@ def build_section3(elements, styles):
     elements.append(Paragraph("3.3 The Silver Layer: Agentic Transformation", styles['SubsectionTitle']))
     elements.append(Paragraph(
         "The Silver layer is where the agentic paradigm most visibly departs from traditional data engineering. Rather "
-        "than human-authored transformation scripts, Silver tables are generated by an autonomous 5-phase workflow:",
+        "than human-authored transformation scripts, Silver tables are generated by an autonomous 5-phase workflow. "
+        "Each phase is a distinct agent responsibility with defined inputs, outputs, and failure modes.",
         styles['BodyText2']))
-    elements.append(Spacer(1, 4))
+    elements.append(Spacer(1, 6))
 
-    phases = [
-        ["Phase 1: Trigger", "Detects events: new Bronze table, schema change, quality threshold breach"],
-        ["Phase 2: Planner", "LLM (Claude 3.5 Sonnet) analyzes schema, considers contracts/directives/learnings, determines strategy"],
-        ["Phase 3: Executor", "LLM generates CREATE OR REPLACE DYNAMIC TABLE DDL with CDC deduplication; self-corrects on failure (3 retries)"],
-        ["Phase 4: Validator", "Multi-layer validation: row counts (\u00b15%), statistical profiling (null rates, distinct counts), schema contract enforcement, referential integrity, semantic assertions (non-negative monetary values, valid date ranges)"],
-        ["Phase 5: Reflector", "LLM extracts learnings (success patterns, failure patterns, optimizations) with confidence scores"],
+    elements.append(Paragraph("3.3.1 Phase 1: The Trigger \u2014 Event-Driven Activation", styles['SubsubTitle']))
+    elements.append(Paragraph(
+        "The Trigger is the system's nervous system. It doesn't poll on a schedule \u2014 it <i>reacts</i> to structural events. "
+        "Three event classes activate the agentic workflow:",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 2))
+    trigger_rows = [
+        ["New Table Detection", "DISCOVER_AND_ONBOARD_NEW_TABLES finds a landing table with no Bronze DT. Creates Bronze "
+         "infrastructure, fires a Stream. AGENTIC_WORKFLOW_TRIGGER_TASK scans for Bronze tables lacking Silver counterparts."],
+        ["Schema Drift", "Current Bronze VARIANT payload keys are compared against the last-known schema snapshot. "
+         "New keys trigger re-planning; dropped keys trigger downstream impact assessment via the Knowledge Graph."],
+        ["Quality Breach", "Scheduled validation detects >5% row count variance, null rate spike, or distribution anomaly. "
+         "Initiates a regeneration cycle rather than patching the existing table."],
     ]
-    t = make_table(["Phase", "Description"], phases, [1.3*inch, 5.0*inch], styles, first_col_bold=True)
+    t = make_table(["Event Class", "Behavior"], trigger_rows, [1.3*inch, 5.0*inch], styles, first_col_bold=True)
     elements.append(t)
     elements.append(Spacer(1, 4))
-
-    elements.append(Paragraph("3.2.1 Validator Deep Dive", styles['SubsubTitle']))
     elements.append(Paragraph(
-        "The Validator performs multi-layer checks that go beyond simple row counts: <b>Statistical Profiling</b> compares "
-        "null rates, distinct counts, and value distributions against source columns \u2014 a Silver column with 40% nulls "
-        "when the Bronze source has 0% triggers an investigation. <b>Semantic Assertions</b> are generated by the LLM based "
-        "on column semantics: monetary values must be non-negative, dates must not be in the future, email formats must match "
-        "regex patterns. Validation failures feed back into the Executor for self-correction, creating an iterative refinement loop.",
+        "The Trigger\u2019s output is a <i>work order</i> \u2014 a JSON payload containing the Bronze table name, event type, "
+        "current schema snapshot, and downstream dependencies. This work order is the Planner\u2019s input.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 6))
+
+    elements.append(Paragraph("3.3.2 Phase 2: The Planner \u2014 Context Assembly and Strategy", styles['SubsubTitle']))
+    elements.append(Paragraph(
+        "The Planner is the most LLM-intensive phase. Its job is not to write SQL \u2014 it is to <i>decide what SQL should "
+        "be written</i>. The Planner assembles a rich context window from four sources:",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 2))
+    planner_rows = [
+        ["Schema Context", "Bronze VARIANT keys, inferred types, sample values, cardinality estimates. For CUSTOMERS_VARIANT: "
+         "CUSTOMER_ID is integer PK, EMAIL contains valid addresses, _SNOWFLAKE_UPDATED_AT is the CDC timestamp."],
+        ["Contract + Directive", "Any active Schema Contract (column names, types, required flags) and matching Transformation "
+         "Directives (business intent like \"churn prediction: compute RFM features\"). Contract constrains shape; directive guides logic."],
+        ["Knowledge Graph", "Vector similarity search finds analogous tables transformed before. If INVOICES_VARIANT arrives "
+         "and ORDERS_VARIANT used a specific CDC dedup pattern, that pattern is surfaced. Also provides downstream dependency info."],
+        ["Learnings", "All active learnings matching the table's pattern signature \u2014 both positive (\"CDC tables need "
+         "ROW_NUMBER() dedup\") and negative (\"Window functions on SUPPORT_TICKETS cause timeout due to skew\")."],
+    ]
+    t = make_table(["Context Source", "What It Provides"], planner_rows, [1.3*inch, 5.0*inch], styles, first_col_bold=True)
+    elements.append(t)
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "The Planner\u2019s output is a <i>transformation strategy</i> \u2014 not SQL, but a structured plan: \"Use ROW_NUMBER() "
+        "dedup on _SNOWFLAKE_UPDATED_AT, extract 12 columns, derive RECENCY_DAYS, apply churn prediction directive by "
+        "computing RFM features.\" This strategy document is the Executor\u2019s input.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 6))
+
+    elements.append(Paragraph("3.3.3 Phase 3: The Executor \u2014 SQL Generation with Self-Correction", styles['SubsubTitle']))
+    elements.append(Paragraph(
+        "The Executor is where strategy becomes DDL. The LLM (Claude 3.5 Sonnet) takes the Planner\u2019s strategy and "
+        "generates a complete CREATE OR REPLACE DYNAMIC TABLE statement with CDC-aware deduplication using ROW_NUMBER(), "
+        "type-safe column extraction from VARIANT, derived columns from Directives, TARGET_LAG of 1 minute, and soft-delete filtering.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+    add_callout(elements,
+        "<b>The Self-Correction Loop:</b> If the DDL fails compilation, the Snowflake error message is injected back into "
+        "the LLM prompt: <i>\"Your DDL failed with: 'invalid identifier SRC:full_name'. The VARIANT payload contains "
+        "'first_name' and 'last_name' but not 'full_name'. Fix the DDL.\"</i> The system retries up to 3 times, with each "
+        "attempt receiving accumulated error context from all previous failures. For Gold DDL, the Executor additionally runs "
+        "VALIDATE_GOLD_DDL \u2014 catching the 15-20% of first attempts where the LLM hallucinates a table name.",
+        styles)
+    elements.append(Spacer(1, 6))
+
+    elements.append(Paragraph("3.3.4 Phase 4: The Validator \u2014 Deterministic Trust Boundary", styles['SubsubTitle']))
+    elements.append(Paragraph(
+        "This is the phase that separates a toy demo from a production system. The Validator is the hard boundary between "
+        "AI-generated optimism and production reality. We treat every agent-generated SQL statement as <b>guilty until "
+        "proven innocent</b>. The Validator isn't an AI \"vibe check.\" It is a battery of deterministic, hard-coded guardrails:",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 2))
+    validator_rows = [
+        ["Row Count Parity", "Silver count must be within \u00b15% of source Bronze (after dedup). A 10% delta means something "
+         "was silently dropped or duplicated \u2014 the DDL is rejected."],
+        ["Contract Enforcement", "Every column in the Schema Contract must be present with correct type. CUSTOMER_ID INTEGER "
+         "produced as VARCHAR = failure, regardless of whether the data \"looks fine.\""],
+        ["Statistical Profiling", "Null rates, distinct counts, and distributions compared column-by-column against Bronze. "
+         "A Silver column with 40% nulls when Bronze has 0% triggers investigation."],
+        ["Referential Integrity", "Foreign key columns checked against parent tables. CUSTOMER_ID in ORDERS must exist in "
+         "CUSTOMERS. Orphaned references indicate join/filter errors."],
+        ["Semantic Assertions", "LLM-generated domain checks: monetary values non-negative, dates not in future, email formats "
+         "match regex, status fields contain only valid enum values."],
+    ]
+    t = make_table(["Check", "Description"], validator_rows, [1.3*inch, 5.0*inch], styles, first_col_bold=True)
+    elements.append(t)
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "If a generated pipeline fails any check, it is <b>rejected before it ever touches production</b>. We don\u2019t ask "
+        "the AI to be \"perfect\"; we build a system that makes it impossible for the AI to be \"wrong\" in a way that affects "
+        "the business. Failures feed back into the Executor\u2019s self-correction loop with specific diagnostics.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 6))
+
+    elements.append(Paragraph("3.3.5 Phase 5: The Reflector \u2014 Institutional Memory", styles['SubsubTitle']))
+    elements.append(Paragraph(
+        "The Reflector transforms the Foundry from a stateless LLM wrapper into a system that <i>gets smarter over time</i>. "
+        "After every execution \u2014 success or failure \u2014 the LLM extracts three categories of learning:",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 2))
+    reflector_rows = [
+        ["Success Patterns", "\"Tables with temporal data benefit from ORDER_MONTH derivation.\" \"CDC tables with compound "
+         "primary keys require multi-column PARTITION BY.\" Seeds future Planner prompts."],
+        ["Failure Patterns", "\"Nested VARIANT arrays require LATERAL FLATTEN.\" \"LEAD()/LAG() on SUPPORT_TICKETS causes "
+         "timeout due to partition skew.\" Prevents repeating expensive mistakes."],
+        ["Optimizations", "\"Cluster on CUSTOMER_ID for join performance.\" \"Pre-aggregate by date before window functions "
+         "on high-cardinality tables.\" Improves performance without changing correctness."],
+    ]
+    t = make_table(["Category", "Examples"], reflector_rows, [1.3*inch, 5.0*inch], styles, first_col_bold=True)
+    elements.append(t)
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "Each learning is persisted with a confidence score, pattern signature, and active/inactive flag. When a senior "
+        "engineer corrects an agent\u2019s join logic, that \"scar tissue\" is saved forever in the customer\u2019s Snowflake "
+        "metadata \u2014 creating institutional memory that a generic LLM can never replicate.",
         styles['BodyText2']))
     elements.append(Spacer(1, 10))
 
@@ -742,22 +866,34 @@ def build_section10(elements, styles):
     elements.append(Paragraph("10. Challenges and Limitations", styles['SectionTitle']))
     elements.append(HRFlowable(width="100%", thickness=1, color=SF_BLUE, spaceAfter=8))
 
-    elements.append(Paragraph("LLM Non-Determinism", styles['SubsectionTitle']))
+    elements.append(Paragraph("10.1 LLM Non-Determinism", styles['SubsectionTitle']))
     elements.append(Paragraph(
         "The same Bronze schema may produce slightly different Silver DDL across executions. Schema Contracts mitigate "
         "but do not eliminate this. Future work includes deterministic DDL templates with LLM-powered parameterization.",
         styles['BodyText2']))
     elements.append(Spacer(1, 6))
 
-    elements.append(Paragraph("Cost: Inference vs. Total Cost of Ownership", styles['SubsectionTitle']))
+    elements.append(Paragraph("10.2 Cost: Human Latency for Instant Consumption", styles['SubsectionTitle']))
     elements.append(Paragraph(
-        "LLM inference for transformation planning is more expensive per-execution than static SQL. The initial "
-        "transformation of a new table incurs meaningful Cortex AI credits, and the system amortizes this through cached "
-        "learnings and pattern reuse. However, evaluating agentic data engineering solely on inference cost misses the "
-        "broader economic picture. The relevant comparison is not <i>LLM inference vs. SQL execution</i> \u2014 it is "
-        "<b>total cost of agentic pipeline ownership vs. total cost of manual pipeline ownership</b>.",
+        "The most frequent objection to agentic workflows is the cost of LLM inference. Critics point to the Snowflake "
+        "credits consumed by Cortex AI during the planning and validation phases.",
         styles['BodyText2']))
-    elements.append(Spacer(1, 6))
+    elements.append(Spacer(1, 4))
+    add_callout(elements,
+        "<b>The Human Reality:</b> We are no longer trading SQL credits for LLM credits; we are trading "
+        "<b>Human Latency</b> for <b>Instant Consumption</b>.",
+        styles)
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "\u2022 The real cost in a modern enterprise isn\u2019t the <b>$2.00 in compute</b> to map a schema; it\u2019s the "
+        "<b>$20,000 in engineering salary</b> wasted on \"tribal knowledge\" while a data product sits in a 6-week JIRA queue.",
+        styles['BulletItem']))
+    elements.append(Spacer(1, 2))
+    elements.append(Paragraph(
+        "\u2022 By using <b>Ephemeral Derived Layers</b>, we reduce long-term TCO by eliminating the \"storage tax\" "
+        "on unused, stagnant data. We only pay for the data the business actually needs, exactly when they need it.",
+        styles['BulletItem']))
+    elements.append(Spacer(1, 4))
 
     elements.append(Paragraph(
         "Traditional pipeline development carries substantial hidden costs that are rarely attributed to the pipeline itself:",
@@ -796,24 +932,123 @@ def build_section10(elements, styles):
         styles)
     elements.append(Spacer(1, 8))
 
-    elements.append(Paragraph("Trust and Auditability", styles['SubsectionTitle']))
+    elements.append(Paragraph("10.3 Beyond Hallucinations: The Zero-Trust Model", styles['SubsectionTitle']))
     elements.append(Paragraph(
-        "Production data teams require full audit trails. The system logs every LLM prompt, response, generated DDL, "
-        "and validation result \u2014 but organizational trust in AI-generated transformations is still developing.",
+        "The fear of \"AI-generated garbage\" is valid if you treat an LLM as a black box. The Foundry does the opposite.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+    add_callout(elements,
+        "<b>The Human Reality:</b> We treat every agent-generated SQL statement as <b>guilty until proven innocent</b>.",
+        styles)
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "\u2022 Our <b>Validator Phase</b> isn\u2019t an AI \"vibe check.\" It is a battery of deterministic, hard-coded guardrails.",
+        styles['BulletItem']))
+    elements.append(Spacer(1, 2))
+    elements.append(Paragraph(
+        "\u2022 If a generated pipeline fails a row-count parity test or violates a null-check constraint, it is rejected "
+        "before it ever touches production. We don\u2019t ask the AI to be \"perfect\"; we build a system that makes it "
+        "impossible for the AI to be \"wrong\" in a way that affects the business.",
+        styles['BulletItem']))
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "The three-layer hallucination guardrail pipeline (Syntactic Compilation \u2192 Semantic Reference Check \u2192 Column "
+        "Verification) catches the vast majority of hallucinated SQL before execution. Trust is not assumed \u2014 it is "
+        "earned through verifiable evidence at every step.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 8))
+
+    elements.append(Paragraph("10.4 The \"Scar Tissue\" Moat", styles['SubsectionTitle']))
+    elements.append(Paragraph(
+        "Finally, there is the concern of \"Platform Dependency.\"",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+    add_callout(elements,
+        "<b>The Human Reality:</b> By using the <b>Learnings Registry</b>, we are turning ephemeral engineering efforts "
+        "into <b>Institutional Memory</b>.",
+        styles)
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "\u2022 When a senior engineer corrects an agent\u2019s join logic, that \"scar tissue\" is saved forever in the "
+        "customer\u2019s Snowflake metadata.",
+        styles['BulletItem']))
+    elements.append(Spacer(1, 2))
+    elements.append(Paragraph(
+        "\u2022 This creates a defensive moat that a generic, off-the-shelf LLM can never replicate. Your Snowflake "
+        "account literally becomes \"smarter\" the more you use it, making the Foundry the central brain of your "
+        "data operations.",
+        styles['BulletItem']))
+    elements.append(Spacer(1, 6))
+
+    elements.append(Paragraph("10.5 Trust and Auditability", styles['SubsectionTitle']))
+    elements.append(Paragraph(
+        "Production data teams don\u2019t adopt tools on faith \u2014 they adopt tools they can audit. The Agentic Data Foundry "
+        "treats auditability as a first-class architectural concern, not an afterthought.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "Every LLM interaction is logged to <font face='Courier' size='8'>METADATA.TRANSFORMATION_LOG</font> with full "
+        "provenance: the prompt sent, the model used, the raw response, the generated DDL, the validation result, and the "
+        "final execution outcome \u2014 all tied to a unique execution ID and timestamp. A compliance officer can trace any "
+        "Gold table column back through the exact LLM reasoning chain that produced it, the directive that guided it, and "
+        "the contract that constrained it.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "The system also supports a <font face='Courier' size='8'>dry_run</font> mode where the entire agentic workflow "
+        "executes \u2014 Trigger through Reflector \u2014 but no DDL is materialized. The generated SQL is logged, validated, "
+        "and available for human review in the Streamlit interface before a single table is touched. This is not a "
+        "\"trust me\" system; it\u2019s a \"show your work\" system.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "Organizational trust in AI-generated transformations is still developing. Early adopters report a predictable "
+        "trust curve: initial skepticism, followed by cautious adoption with heavy dry-run usage, followed by growing "
+        "confidence as the audit trail demonstrates consistent accuracy. The Foundry is designed to meet teams wherever "
+        "they are on that curve.",
         styles['BodyText2']))
     elements.append(Spacer(1, 6))
 
-    elements.append(Paragraph("Complex Business Logic", styles['SubsectionTitle']))
+    elements.append(Paragraph("10.6 Complex Business Logic", styles['SubsectionTitle']))
     elements.append(Paragraph(
-        "Highly specific business rules (e.g., fiscal calendar calculations, regulatory compliance) may exceed what an "
-        "LLM can reliably generate from a natural language directive. The system supports manual overrides for these cases.",
+        "Not everything belongs in an LLM prompt. Fiscal calendar calculations that follow a 4-4-5 retail pattern, "
+        "regulatory compliance transformations governed by HIPAA or SOX, multi-entity consolidation rules with "
+        "intercompany elimination \u2014 these are domains where precision is non-negotiable and the cost of a subtle "
+        "error is catastrophic.",
         styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "The Agentic Data Foundry handles this through a deliberate escape hatch: <b>manual overrides</b>. A data "
+        "engineer can define a Schema Contract and Transformation Directive that says, in effect, \"for this table, use "
+        "this exact DDL\" \u2014 bypassing the LLM entirely while still benefiting from the Trigger, Validator, and "
+        "Reflector phases. The override DDL is version-controlled in metadata, validated by the same deterministic "
+        "guardrails, and tracked in the same audit trail.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+    add_callout(elements,
+        "<b>The 80/20 Rule:</b> The goal is not to replace every SQL statement with an LLM call \u2014 it\u2019s to "
+        "eliminate the 80% of pipeline work that is repetitive, pattern-based, and mechanical, freeing engineers to focus "
+        "on the 20% that genuinely requires domain expertise. The boundary between \"agentic\" and \"manual\" is a "
+        "configuration choice, not an architectural limitation.",
+        styles)
     elements.append(Spacer(1, 10))
 
 
 def build_section11(elements, styles):
-    elements.append(Paragraph("11. Conclusion", styles['SectionTitle']))
+    elements.append(Paragraph("11. Conclusion: Bridging the \"Context Gap\"", styles['SectionTitle']))
     elements.append(HRFlowable(width="100%", thickness=1, color=SF_BLUE, spaceAfter=8))
+    elements.append(Paragraph(
+        "Data engineering as we know it \u2014 the era of the \"manual plumber\" \u2014 is over. It has to be. You cannot "
+        "scale an Agentic Enterprise one SQL script at a time. The Agentic Data Foundry demonstrates that the transition "
+        "from imperative to declarative engineering is not only possible but practical.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(
+        "By combining AI-activated discovery, agentic transformation, and a Knowledge Graph that captures \"institutional "
+        "memory,\" we\u2019ve created a system where the gap between \"data arrives\" and \"insight is actionable\" is "
+        "bridged by autonomous agents guided by human intent.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 4))
     elements.append(Paragraph(
         "The Agentic Data Foundry demonstrates that the transition from imperative to declarative data engineering is "
         "not only possible but practical. By combining <b>AI in the Bronze Layer</b> for autonomous discovery and onboarding, "
@@ -853,6 +1088,11 @@ def build_section11(elements, styles):
         "that agentic engineering was designed to eliminate. With the Foundry, the entire path from raw CDC event to "
         "business user insight is autonomous: agents build the data, agents serve the data, and humans govern at "
         "both ends through intent rather than code.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 6))
+    elements.append(Paragraph(
+        "The Agentic Enterprise isn\u2019t a future state; with the Foundry on Snowflake, it\u2019s the current reality. "
+        "<b>Let\u2019s stop building pipes and start describing the future.</b>",
         styles['BodyText2']))
     elements.append(Spacer(1, 16))
 
