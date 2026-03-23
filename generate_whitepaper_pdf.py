@@ -188,8 +188,10 @@ def build_cover(elements, styles):
             [Spacer(1, 0.3 * inch)],
             [Paragraph("A Whitepaper on AI-Native Data Engineering", styles['CoverSubtitle'])],
             [Spacer(1, 0.15 * inch)],
+            [Paragraph("Danny Bryant", styles['CoverSubtitle'])],
+            [Spacer(1, 0.15 * inch)],
             [Paragraph("March 2026", styles['CoverSubtitle'])],
-            [Spacer(1, 2.0 * inch)],
+            [Spacer(1, 1.7 * inch)],
         ],
         colWidths=[6.5 * inch],
     )

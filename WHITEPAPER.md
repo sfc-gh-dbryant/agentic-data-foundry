@@ -2,6 +2,8 @@
 
 **A Whitepaper on AI-Native Data Engineering**
 
+*Danny Bryant*
+
 *March 2026*
 
 ---
