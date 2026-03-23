@@ -821,17 +821,25 @@ def build_section8(elements, styles):
 
 
 def build_section9(elements, styles):
-    elements.append(Paragraph("9. Design Decisions", styles['SectionTitle']))
+    elements.append(Paragraph("9. Principles and Design Decisions", styles['SectionTitle']))
     elements.append(HRFlowable(width="100%", thickness=1, color=SF_BLUE, spaceAfter=8))
 
-    decisions = [
-        ["Bronze Is Immutable", "OBJECT_CONSTRUCT(*) captures the full payload as VARIANT. Schema changes in the source never break Bronze."],
-        ["Dynamic Tables Over\nStored Procedures", "Declarative refresh semantics, automatic dependency tracking, and built-in observability via TARGET_LAG."],
-        ["Metadata Is the Product", "The primary deliverable of human work is metadata (contracts, directives, lineage maps), not code. Code is generated from metadata."],
-    ]
-    t = make_table(["Decision", "Rationale"], decisions, [1.5*inch, 4.8*inch], styles, first_col_bold=True)
-    elements.append(t)
-    elements.append(Spacer(1, 8))
+    elements.append(Paragraph("9.1 Bronze Is Immutable", styles['SubsectionTitle']))
+    elements.append(Paragraph(
+        "The Bronze layer uses <font face='Courier' size='8'>OBJECT_CONSTRUCT(*)</font> to capture the complete source "
+        "payload as a VARIANT column. This design ensures schema changes in the source never break Bronze, historical "
+        "payloads are preserved exactly as received, and the agentic system always has the full context for transformation decisions.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 6))
+
+    elements.append(Paragraph("9.2 Dynamic Tables Over Stored Procedures", styles['SubsectionTitle']))
+    elements.append(Paragraph(
+        "Silver and Gold tables are implemented as Dynamic Tables with <font face='Courier' size='8'>TARGET_LAG</font> "
+        "rather than stored procedure-based ETL. This provides declarative refresh semantics (Snowflake manages scheduling), "
+        "automatic dependency tracking (downstream DTs refresh when upstream changes), and built-in observability "
+        "(DT refresh history, lag monitoring).",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 6))
 
     elements.append(Paragraph("9.3 Hallucination Guardrails: Multi-Layer DDL Validation", styles['SubsectionTitle']))
     elements.append(Paragraph(
@@ -858,6 +866,14 @@ def build_section9(elements, styles):
         "meaning agent-generated tables automatically respect governance policies applied to source tables. "
         "Every LLM prompt, generated DDL, and validation result is logged to TRANSFORMATION_LOG with full audit trail. "
         "A <font face='Courier' size='8'>dry_run</font> mode allows human review of all generated DDLs before production execution.",
+        styles['BodyText2']))
+    elements.append(Spacer(1, 6))
+
+    elements.append(Paragraph("9.5 Metadata Is the Product", styles['SubsectionTitle']))
+    elements.append(Paragraph(
+        "In the Agentic Data Foundry, the primary deliverable of human work is <i>metadata</i> \u2014 contracts, directives, "
+        "lineage maps \u2014 not code. This inverts the traditional relationship where metadata is an afterthought generated "
+        "from code. Here, code is generated from metadata.",
         styles['BodyText2']))
     elements.append(Spacer(1, 10))
 
