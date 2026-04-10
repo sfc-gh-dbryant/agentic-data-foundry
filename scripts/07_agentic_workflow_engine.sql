@@ -427,7 +427,7 @@ OUTPUT FORMAT (JSON only, no explanation):
 }';
 
         -- Call LLM for planning decision
-        SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', :planner_prompt) INTO :llm_response;
+        SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet', :planner_prompt) INTO :llm_response;
         
         -- Parse response (extract JSON - handle nested objects)
         BEGIN
@@ -628,7 +628,7 @@ OUTPUT: Only the corrected CREATE OR REPLACE DYNAMIC TABLE statement.';
             END IF;
             
             -- Generate SQL via LLM
-            SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', :execution_prompt) INTO :llm_response;
+            SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet', :execution_prompt) INTO :llm_response;
             
             -- Clean up response
             generated_sql := TRIM(REGEXP_REPLACE(llm_response, '```sql|```', ''));
@@ -890,7 +890,7 @@ OUTPUT FORMAT (JSON array):
 Output only the JSON array, no explanation.';
 
     -- Generate reflections via LLM
-    SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', :reflection_prompt) INTO :llm_reflection;
+    SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet', :reflection_prompt) INTO :llm_reflection;
     
     -- Parse learnings
     BEGIN

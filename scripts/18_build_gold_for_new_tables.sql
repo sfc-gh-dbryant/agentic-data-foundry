@@ -177,7 +177,7 @@ REQUIREMENTS:
 OUTPUT: Only the CREATE OR REPLACE DYNAMIC TABLE statement."""
 
         prompt_escaped = prompt.replace("''", "''''")
-        llm_rows = session.sql(f"SELECT SNOWFLAKE.CORTEX.COMPLETE(''claude-3-5-sonnet'', ''{prompt_escaped}'')").collect()
+        llm_rows = session.sql(f"SELECT SNOWFLAKE.CORTEX.COMPLETE(''claude-3-7-sonnet'', ''{prompt_escaped}'')").collect()
         llm_response = llm_rows[0][0] if llm_rows else ''''
 
         generated_sql = llm_response.strip().replace(''```sql'', '''').replace(''```'', '''').strip()
@@ -222,7 +222,7 @@ OUTPUT: Only the CREATE OR REPLACE DYNAMIC TABLE statement."""
                     retry_count += 1
                     fix_prompt = f"""The DDL failed validation: {last_error}\\nFix the table references.\\nFAILED SQL:\\n{generated_sql}\\nOUTPUT: Only the corrected SQL."""
                     fix_escaped = fix_prompt.replace("''", "''''")
-                    fix_rows = session.sql(f"SELECT SNOWFLAKE.CORTEX.COMPLETE(''claude-3-5-sonnet'', ''{fix_escaped}'')").collect()
+                    fix_rows = session.sql(f"SELECT SNOWFLAKE.CORTEX.COMPLETE(''claude-3-7-sonnet'', ''{fix_escaped}'')").collect()
                     fix_response = fix_rows[0][0] if fix_rows else ''''
                     generated_sql = fix_response.strip().replace(''```sql'', '''').replace(''```'', '''').strip()
                     ci = generated_sql.upper().find(''CREATE'')
@@ -268,7 +268,7 @@ FAILED SQL:
 {generated_sql}
 OUTPUT: Only the corrected CREATE OR REPLACE DYNAMIC TABLE statement."""
                 fix_escaped = fix_prompt.replace("''", "''''")
-                fix_rows = session.sql(f"SELECT SNOWFLAKE.CORTEX.COMPLETE(''claude-3-5-sonnet'', ''{fix_escaped}'')").collect()
+                fix_rows = session.sql(f"SELECT SNOWFLAKE.CORTEX.COMPLETE(''claude-3-7-sonnet'', ''{fix_escaped}'')").collect()
                 fix_response = fix_rows[0][0] if fix_rows else ''''
                 generated_sql = fix_response.strip().replace(''```sql'', '''').replace(''```'', '''').strip()
                 ci = generated_sql.upper().find(''CREATE'')

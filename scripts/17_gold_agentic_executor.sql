@@ -103,7 +103,7 @@ FAILED SQL:
 OUTPUT: Only the corrected CREATE OR REPLACE DYNAMIC TABLE statement."""
 
         prompt_escaped = prompt.replace("''", "''''")
-        llm_rows = session.sql(f"SELECT SNOWFLAKE.CORTEX.COMPLETE(''claude-3-5-sonnet'', ''{prompt_escaped}'')").collect()
+        llm_rows = session.sql(f"SELECT SNOWFLAKE.CORTEX.COMPLETE(''claude-3-7-sonnet'', ''{prompt_escaped}'')").collect()
         llm_response = llm_rows[0][0] if llm_rows else ''''
 
         generated_sql = llm_response.strip().replace(''```sql'', '''').replace(''```'', '''').strip()

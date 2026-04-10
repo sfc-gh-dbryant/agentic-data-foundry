@@ -2,7 +2,7 @@
 -- 09_SEMANTIC_VIEWS: Agentic Semantic View Pipeline
 -- ============================================================================
 -- Purpose: Auto-discover Gold tables and generate semantic views using LLM
--- LLM: claude-3-5-sonnet
+-- LLM: claude-3-7-sonnet
 -- Run as: ACCOUNTADMIN
 -- ============================================================================
 
@@ -71,7 +71,7 @@ BEGIN
                   ' RULES: Each column once. COUNT(DISTINCT x) not COUNT_DISTINCT. FACTS=numeric IDs DIMENSIONS=text/dates METRICS=aggregations. Return ONLY valid SQL.';
         
         -- Call Cortex LLM
-        SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', :prompt) INTO :llm_response;
+        SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet', :prompt) INTO :llm_response;
         ddl_sql := TRIM(REGEXP_REPLACE(:llm_response, '^```sql|```$|^```', ''));
         
         -- Try to execute the generated DDL

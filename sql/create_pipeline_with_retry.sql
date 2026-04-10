@@ -66,7 +66,7 @@ BEGIN
                     ' CRITICAL: FACTS/DIMENSIONS must be TABLE.COL AS alias. METRICS must be TABLE.COL AS AGG(alias). Output ONLY corrected CREATE statement.';
             END IF;
 
-            SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', :prompt) INTO :llm_response;
+            SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet', :prompt) INTO :llm_response;
             
             ddl_sql := TRIM(REGEXP_REPLACE(:llm_response, '```sql|```', ''));
             create_pos := POSITION('CREATE' IN UPPER(:ddl_sql));

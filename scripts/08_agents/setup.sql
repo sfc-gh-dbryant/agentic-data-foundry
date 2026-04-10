@@ -2,7 +2,7 @@
 -- 08_AGENTS: Agentic Procedures with Cortex LLM
 -- ============================================================================
 -- Purpose: Create AI-powered procedures for schema discovery and transformation
--- LLMs Used: claude-3-5-sonnet, llama3.1-8b
+-- LLMs Used: claude-3-7-sonnet, llama3.1-8b
 -- Run as: ACCOUNTADMIN
 -- ============================================================================
 
@@ -126,7 +126,7 @@ $$;
 -- ============================================================================
 -- AGENT: INFER_SEMANTIC_CONTEXT
 -- Purpose: Use LLM to generate business descriptions and synonyms for columns
--- LLM: claude-3-5-sonnet (high quality for semantic understanding)
+-- LLM: claude-3-7-sonnet (high quality for semantic understanding)
 -- ============================================================================
 CREATE OR REPLACE PROCEDURE DBAONTAP_ANALYTICS.AGENTS.INFER_SEMANTIC_CONTEXT(gold_table VARCHAR)
 RETURNS VARIANT
@@ -144,7 +144,7 @@ BEGIN
               :schema_info::VARCHAR ||
               '. For each column, provide: 1) A business-friendly description, 2) Synonyms users might use, 3) Sample values if categorical. Return as JSON array.';
     
-    SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', :prompt) INTO :llm_response;
+    SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet', :prompt) INTO :llm_response;
     
     RETURN OBJECT_CONSTRUCT(
         'table', :gold_table,
@@ -158,7 +158,7 @@ $$;
 -- ============================================================================
 -- AGENT: GENERATE_SEMANTIC_VIEW
 -- Purpose: Use LLM to generate semantic view DDL and execute it
--- LLM: claude-3-5-sonnet (high quality for DDL generation)
+-- LLM: claude-3-7-sonnet (high quality for DDL generation)
 -- ============================================================================
 CREATE OR REPLACE PROCEDURE DBAONTAP_ANALYTICS.AGENTS.GENERATE_SEMANTIC_VIEW(
     gold_table VARCHAR,
@@ -195,7 +195,7 @@ METRICS (' || :table_alias || '.metric AS AGG_FUNC(col));
 FACTS=numeric IDs, DIMENSIONS=text/dates, METRICS=aggregations.
 Return ONLY SQL.';
 
-    SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', :prompt) INTO :llm_response;
+    SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet', :prompt) INTO :llm_response;
     
     ddl_sql := REGEXP_REPLACE(:llm_response, '^```sql\n|\n```$', '');
     ddl_sql := REGEXP_REPLACE(:ddl_sql, '^```\n|\n```$', '');

@@ -83,7 +83,7 @@ OUTPUT FORMAT (JSON only, no explanation):
   "reasoning": "Brief explanation"
 }';
 
-        SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', :planner_prompt) INTO :llm_response;
+        SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet', :planner_prompt) INTO :llm_response;
         
         BEGIN
             LET json_start INTEGER := POSITION('{' IN llm_response);

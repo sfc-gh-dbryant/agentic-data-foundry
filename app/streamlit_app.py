@@ -281,7 +281,7 @@ Generate realistic, varied business data. No explanations, just the JSON array."
         try:
             result = session.sql(f"""
                 SELECT SNOWFLAKE.CORTEX.COMPLETE(
-                    'claude-3-5-sonnet',
+                    'claude-3-7-sonnet',
                     '{prompt.replace("'", "''")}'
                 ) as response
             """).collect()
@@ -2418,7 +2418,7 @@ def render_schema_contracts_tab():
             if schema_info is not None and len(schema_info) > 0:
                 discovered = schema_info.iloc[0][0]
                 llm_result = run_query(f"""
-                    SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
+                    SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet',
                         'Given this discovered Bronze schema: {discovered}
 
 Propose a Silver schema contract as a JSON array. Each element: {{"name":"COL_NAME","type":"SNOWFLAKE_TYPE","required":true/false}}
@@ -2550,7 +2550,7 @@ def render_directives_tab():
             if new_table_pattern and new_use_case:
                 with st.spinner("Asking LLM to draft a directive..."):
                     gen_result = run_query(f"""
-                        SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
+                        SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet',
                             'You are a data engineering expert. Write a transformation directive for this scenario:
 Table: {new_table_pattern.upper()}
 Use case: {new_use_case}

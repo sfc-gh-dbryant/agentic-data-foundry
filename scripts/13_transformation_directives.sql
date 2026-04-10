@@ -178,7 +178,7 @@ OUTPUT FORMAT (JSON only, no explanation):
   "reasoning": "Brief explanation including how directives were applied"
 }'';
 
-        SELECT SNOWFLAKE.CORTEX.COMPLETE(''claude-3-5-sonnet'', :planner_prompt) INTO :llm_response;
+        SELECT SNOWFLAKE.CORTEX.COMPLETE(''claude-3-7-sonnet'', :planner_prompt) INTO :llm_response;
 
         BEGIN
             LET json_start INTEGER := POSITION(''{'' IN llm_response);
@@ -387,7 +387,7 @@ SELECT '' || variant_column || '':field_name::TYPE AS alias FROM table;
 OUTPUT: Only the corrected CREATE OR REPLACE DYNAMIC TABLE statement.'';
             END IF;
 
-            SELECT SNOWFLAKE.CORTEX.COMPLETE(''claude-3-5-sonnet'', :execution_prompt) INTO :llm_response;
+            SELECT SNOWFLAKE.CORTEX.COMPLETE(''claude-3-7-sonnet'', :execution_prompt) INTO :llm_response;
 
             generated_sql := TRIM(REGEXP_REPLACE(llm_response, ''```sql|```'', ''''));
             LET create_pos INTEGER := POSITION(''CREATE'' IN UPPER(generated_sql));
@@ -585,7 +585,7 @@ FAILED SQL:
 OUTPUT: Only the corrected CREATE OR REPLACE DYNAMIC TABLE statement."""
 
         prompt_escaped = prompt.replace("'", "''")
-        llm_rows = session.sql(f"SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', '{prompt_escaped}')").collect()
+        llm_rows = session.sql(f"SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet', '{prompt_escaped}')").collect()
         llm_response = llm_rows[0][0] if llm_rows else ''
 
         generated_sql = llm_response.strip().replace('```sql', '').replace('```', '').strip()
@@ -711,7 +711,7 @@ RULES:
 OUTPUT: The complete CREATE OR REPLACE DYNAMIC TABLE statement."""
 
     prompt_escaped = prompt.replace("'", "''")
-    llm_rows = session.sql(f"SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', '{prompt_escaped}')").collect()
+    llm_rows = session.sql(f"SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet', '{prompt_escaped}')").collect()
     llm_response = llm_rows[0][0] if llm_rows else ''
 
     generated_sql = llm_response.strip()

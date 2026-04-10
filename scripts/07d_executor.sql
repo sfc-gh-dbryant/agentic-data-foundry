@@ -116,7 +116,7 @@ SELECT ' || variant_column || ':field_name::TYPE AS alias FROM table;
 OUTPUT: Only the corrected CREATE OR REPLACE DYNAMIC TABLE statement.';
             END IF;
             
-            SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', :execution_prompt) INTO :llm_response;
+            SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet', :execution_prompt) INTO :llm_response;
             
             generated_sql := TRIM(REGEXP_REPLACE(llm_response, '```sql|```', ''));
             LET create_pos INTEGER := POSITION('CREATE' IN UPPER(generated_sql));

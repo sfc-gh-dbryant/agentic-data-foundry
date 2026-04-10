@@ -620,7 +620,7 @@ def render_semantic_tab():
     
     with col1:
         st.markdown("""
-        The agentic pipeline uses **Cortex LLM (claude-3-5-sonnet)** to:
+        The agentic pipeline uses **Cortex LLM (claude-3-7-sonnet)** to:
         1. **Discover** all Gold tables automatically
         2. **Analyze** schema structure and infer primary keys
         3. **Generate** semantic view DDL with dimensions, facts, and metrics

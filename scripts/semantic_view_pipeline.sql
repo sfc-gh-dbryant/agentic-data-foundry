@@ -38,7 +38,7 @@ BEGIN
         
         prompt := 'Generate Snowflake SEMANTIC VIEW DDL. Table: DBAONTAP_ANALYTICS.GOLD.' || :table_name_var || ' View: DBAONTAP_ANALYTICS.GOLD.' || :sv_name || ' PK: ' || :pk_column || ' Columns: ' || :col_list || ' FORMAT: CREATE OR REPLACE SEMANTIC VIEW DBAONTAP_ANALYTICS.GOLD.' || :sv_name || ' TABLES (DBAONTAP_ANALYTICS.GOLD.' || :table_name_var || ' PRIMARY KEY (' || :pk_column || ')) FACTS (' || :table_name_var || '.col AS alias) DIMENSIONS (' || :table_name_var || '.col AS alias) METRICS (' || :table_name_var || '.name AS AGG(col)); RULES: Each column once. COUNT(DISTINCT x) not COUNT_DISTINCT. FACTS=numeric IDs DIMENSIONS=text/dates METRICS=aggregations. Return ONLY valid SQL.';
         
-        SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet', :prompt) INTO :llm_response;
+        SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-7-sonnet', :prompt) INTO :llm_response;
         ddl_sql := TRIM(REGEXP_REPLACE(:llm_response, '^```sql|```$|^```', ''));
         
         BEGIN

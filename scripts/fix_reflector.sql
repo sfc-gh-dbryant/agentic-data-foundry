@@ -40,7 +40,7 @@ OUTPUT FORMAT (JSON array only, no explanation):
 [{"learning_type": "success_pattern", "pattern_signature": "unique_id", "observation": "what was observed", "recommendation": "what to do", "confidence": 0.8}]';
 
     SELECT SNOWFLAKE.CORTEX.COMPLETE(
-        'claude-3-5-sonnet',
+        'claude-3-7-sonnet',
         ARRAY_CONSTRUCT(
             OBJECT_CONSTRUCT('role', 'user', 'content', :reflection_prompt)
         ),
